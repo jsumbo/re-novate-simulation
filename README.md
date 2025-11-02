@@ -16,6 +16,8 @@ RE-Novate is an interactive entrepreneurial skills development platform designed
 **Production App:** [https://capstone-solution-c30f.onrender.com](https://capstone-solution-c30f.onrender.com)
 
 ### Test Credentials
+TRIBE Academy 
+TRIBE001
 
 **Student Login:**
 
@@ -25,14 +27,14 @@ RE-Novate is an interactive entrepreneurial skills development platform designed
 **Facilitator Login:**
 
 - Select your school from the dropdown
-- Enter access code: `TEACH2024`
+- Enter access code: 
 
 ## 🛠️ Installation & Setup
 
 ### Prerequisites
 
 - **Node.js** (v18 or higher)
-- **pnpm** or **npm**
+- **pnpm** 
 - **Supabase** account
 
 ### Step-by-Step Installation
@@ -40,16 +42,14 @@ RE-Novate is an interactive entrepreneurial skills development platform designed
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/your-username/re-novate-simulation-app.git
-   cd re-novate-simulation-app
+   git clone https://github.com/your-username/re-novate-simulation.git
+   cd re-novate-simulation
    ```
 
 2. **Install dependencies**
 
    ```bash
    pnpm install
-   # or
-   npm install
    ```
 
 3. **Set up environment variables**
@@ -66,11 +66,6 @@ RE-Novate is an interactive entrepreneurial skills development platform designed
    # App Configuration
    NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-   # Optional: Site Verification (for production)
-   GOOGLE_SITE_VERIFICATION=your_google_verification_code
-   YANDEX_VERIFICATION=your_yandex_verification_code
-   YAHOO_VERIFICATION=your_yahoo_verification_code
-   ```
 
 4. **Set up Supabase database**
 
@@ -104,16 +99,16 @@ RE-Novate is an interactive entrepreneurial skills development platform designed
 
 ```bash
 # Type checking
-npm run type-check
+pnpm run type-check
 
 # Linting
-npm run lint
+pnpm run lint
 
 # Build for production
-npm run build
+pnpm run build
 
 # Start production server
-npm run start
+pnpm run start
 ```
 
 ## 📁 Project Structure
@@ -171,6 +166,3 @@ Database configuration is handled through environment variables. The app uses:
 - **Real-time subscriptions** - For live updates
 - **Edge functions** - For server-side logic
 
----
-
-**Built with ❤️ for entrepreneurship education**
