@@ -1,6 +1,6 @@
 "use client"
 
-import { EnhancedOnboardingFlow } from "@/components/onboarding/enhanced-onboarding-flow"
+import { EnhancedOnboardingFlow } from "@/components/onboarding/onboarding-flow"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 

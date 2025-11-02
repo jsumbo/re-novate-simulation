@@ -267,7 +267,7 @@ export async function generateSimulation(
 ): Promise<SimulationResponse> {
   // Analyze user history to avoid repetition and increase difficulty
   const usedScenarios = userHistory?.map((h) => h.scenarioType) || [];
-  const userPerformance = calculateUserPerformance(userHistory);
+  const userPerformance = await calculateUserPerformance(userHistory);
 
   // Select appropriate scenario template based on business stage and history
   const templates =
@@ -294,7 +294,7 @@ export async function generateSimulation(
     stakeholders: selectedTemplate.stakeholders,
     constraints: selectedTemplate.constraints,
     success_metrics: selectedTemplate.success_metrics,
-    difficulty_level: calculateDifficulty(context, userPerformance),
+  difficulty_level: await calculateDifficulty(context, userPerformance),
     estimated_time: 10 + Math.floor(Math.random() * 10), // 10-20 minutes
   };
 
@@ -657,11 +657,11 @@ function generateResourceImpact(type: string, context: SimulationContext): any {
   return impacts[type as keyof typeof impacts] || impacts.conservative;
 }
 
-function calculateUserPerformance(userHistory?: any[]): {
+export async function calculateUserPerformance(userHistory?: any[]): Promise<{
   averageScore: number;
   strongSkills: string[];
   weakSkills: string[];
-} {
+}> {
   if (!userHistory || userHistory.length === 0) {
     return { averageScore: 0, strongSkills: [], weakSkills: [] };
   }
@@ -695,10 +695,10 @@ function calculateUserPerformance(userHistory?: any[]): {
   return { averageScore, strongSkills, weakSkills };
 }
 
-function calculateDifficulty(
+export async function calculateDifficulty(
   context: SimulationContext,
   userPerformance?: { averageScore: number }
-): number {
+): Promise<number> {
   let difficulty = 1;
 
   if (context.businessStage === "growth") difficulty += 1;

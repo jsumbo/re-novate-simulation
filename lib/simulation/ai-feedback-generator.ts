@@ -1,6 +1,7 @@
 "use server"
 
 import { SimulationOption, SimulationScenario, DetailedFeedback, SimulationContext } from './types'
+import { calculateUserPerformance } from './ai-generator'
 
 // Comprehensive feedback generation system
 export async function generateDetailedFeedback(
@@ -10,9 +11,57 @@ export async function generateDetailedFeedback(
   userHistory?: any[]
 ): Promise<DetailedFeedback> {
   
-  const userPerformance = calculateUserPerformance(userHistory)
+  const userPerformance = await calculateUserPerformance(userHistory)
   const careerPath = context.user_background.career_path
-  
+  // Generate richer, unique feedback using the model.
+  // Otherwise fall back to the template-based generator above.
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const prompt = buildFeedbackPrompt({ scenario, selectedOption, context, userPerformance })
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are an expert instructional designer and business mentor. Provide clear, concise, and actionable feedback tailored to the simulation context.' },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.8,
+          max_tokens: 800,
+        }),
+      })
+
+      if (resp.ok) {
+        const data = await resp.json()
+        const text = data.choices?.[0]?.message?.content || ''
+        // The model returns a single blob of text. Try to parse JSON if the model returned structured JSON.
+        try {
+          const parsed = JSON.parse(text)
+          return parsed as DetailedFeedback
+        } catch {
+          // If parsing fails, spread the text into the overall_assessment and use templates for structured fields
+          return {
+            overall_assessment: text,
+            decision_analysis: generateDecisionAnalysis(selectedOption, scenario, context),
+            skill_development: generateSkillDevelopment(selectedOption, careerPath, userPerformance),
+            real_world_examples: generateRealWorldExamples(scenario, selectedOption, careerPath),
+            learning_resources: generateLearningResources(selectedOption, scenario, careerPath),
+            action_items: generateActionItems(selectedOption, scenario, careerPath),
+            reflection_questions: generateReflectionQuestions(scenario, selectedOption, careerPath),
+          }
+        }
+      }
+    } catch (e) {
+      // If the AI call fails for any reason, fall back to the template generator below.
+      // eslint-disable-next-line no-console
+      console.warn('OpenAI feedback generation failed, falling back to template generator.', e)
+    }
+  }
+
   return {
     overall_assessment: generateOverallAssessment(selectedOption, scenario, careerPath),
     decision_analysis: generateDecisionAnalysis(selectedOption, scenario, context),
@@ -20,8 +69,13 @@ export async function generateDetailedFeedback(
     real_world_examples: generateRealWorldExamples(scenario, selectedOption, careerPath),
     learning_resources: generateLearningResources(selectedOption, scenario, careerPath),
     action_items: generateActionItems(selectedOption, scenario, careerPath),
-    reflection_questions: generateReflectionQuestions(scenario, selectedOption, careerPath)
+    reflection_questions: generateReflectionQuestions(scenario, selectedOption, careerPath),
   }
+}
+
+function buildFeedbackPrompt({ scenario, selectedOption, context, userPerformance }: any) {
+  // Build a detailed prompt describing the simulation, the chosen option, and the learner context.
+  return `Scenario:\nTitle: ${scenario.title}\nContext: ${scenario.context}\nChallenge: ${scenario.challenge}\n\nSelected Option:\n${selectedOption.text}\nRisk level: ${selectedOption.risk_level}\nImmediate consequences: ${JSON.stringify(selectedOption.immediate_consequences)}\nLong term effects: ${JSON.stringify(selectedOption.long_term_effects)}\n\nLearner Context:\nCareer path: ${context.user_background.career_path}\nSkill level: ${context.user_background.skill_level}\nBusiness stage: ${context.businessStage}\nMarket conditions: ${context.market_conditions}\nResources: ${JSON.stringify(context.resources)}\n\nUser performance summary: ${JSON.stringify(userPerformance)}\n\nProduce a JSON object with the following keys: overall_assessment (string), decision_analysis (object with strengths, areas_for_improvement, alternative_approaches arrays), skill_development (object with skills_demonstrated and skills_to_develop arrays), real_world_examples (array), learning_resources (object), action_items (array), reflection_questions (array). Keep responses concise and actionable.`
 }
 
 function generateOverallAssessment(
@@ -197,9 +251,15 @@ function generateRealWorldExamples(
       }
     ]
   }
-  
-  const stageExamples = examples[scenario.title.includes('startup') ? 'startup' : 'growth'] || examples.startup
-  return stageExamples.slice(0, 2)
+
+  // Determine stage from scenario if available, otherwise fallback to context in title
+  const lowerTitle = scenario.title?.toLowerCase() || ''
+  const stage = lowerTitle.includes('startup') ? 'startup' : lowerTitle.includes('growth') ? 'growth' : 'startup'
+  const stageExamples = examples[stage] || examples.startup
+  // Personalize examples selection using selectedOption text to vary output
+  const seed = (selectedOption.text || '').length
+  const idx = seed % stageExamples.length
+  return [stageExamples[idx], stageExamples[(idx + 1) % stageExamples.length]]
 }
 
 function generateLearningResources(
@@ -397,16 +457,4 @@ function generateReflectionQuestions(
   ].slice(0, 4)
 }
 
-function calculateUserPerformance(userHistory?: any[]) {
-  if (!userHistory || userHistory.length === 0) {
-    return { averageScore: 0, strongSkills: [], weakSkills: [] }
-  }
-  
-  // This would analyze user's historical performance
-  // For now, return mock data
-  return {
-    averageScore: 75,
-    strongSkills: ['strategic_thinking', 'decision_making'],
-    weakSkills: ['stakeholder_management', 'risk_assessment']
-  }
-}
+// note: user performance calculation is provided by ai-generator.calculateUserPerformance

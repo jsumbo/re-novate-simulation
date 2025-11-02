@@ -5,95 +5,83 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Clock, Users, Target, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Clock, Target, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { SimulationResponse, SimulationOption } from "@/lib/simulation/types"
+import { SimulationResponse } from "@/lib/simulation/types"
 
-interface SimulationEngineProps {
+interface EnhancedSimulationEngineProps {
   user: any
 }
 
-export function SimulationEngine({ user }: SimulationEngineProps) {
+export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps) {
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [currentRound, setCurrentRound] = useState(1)
-  const [showResult, setShowResult] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [showResults, setShowResults] = useState(false)
+  const [aiResults, setAiResults] = useState<any>(null)
 
   useEffect(() => {
     loadSimulation()
   }, [])
 
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case 'low':
+        return 'bg-green-100 text-green-800'
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'high':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   const loadSimulation = async () => {
     setIsLoading(true)
     try {
-      // This would call the AI generation service
       const mockSimulation: SimulationResponse = {
         scenario: {
-          id: "sim_001",
-          title: "Startup Funding Crisis",
-          context: `Your ${user.career_path} startup in Monrovia is facing a critical funding shortage.`,
-          situation: "With only 2 months of runway left, you need to make a decision that could determine the future of your business.",
-          challenge: "Secure additional funding or pivot your business model to extend runway",
-          stakeholders: ["investors", "employees", "customers", "co-founders"],
-          constraints: ["limited_time", "cash_flow", "team_morale"],
-          success_metrics: ["runway_extension", "team_retention", "product_development"],
-          difficulty_level: 3,
-          estimated_time: 15
+          id: "complex_sim_001",
+          title: "Multi-Crisis Startup Challenge",
+          context: `Your fintech startup in Monrovia faces multiple simultaneous challenges: funding is running low (2 months runway), your lead developer just quit, a competitor launched a similar product, and the Central Bank of Liberia is considering new regulations.`,
+          situation: "You're in a board meeting with investors, and they want a comprehensive response plan within 48 hours.",
+          challenge: "Navigate this multi-faceted crisis by making strategic decisions across funding, team management, competitive positioning, and regulatory compliance.",
+          stakeholders: ["investors", "remaining_employees", "customers", "co-founders", "regulatory_bodies", "competitors"],
+          constraints: ["48_hour_deadline", "limited_cash_flow", "team_uncertainty", "regulatory_ambiguity", "competitive_pressure"],
+          success_metrics: ["runway_extension", "team_stability", "market_position", "regulatory_compliance", "investor_confidence"],
+          difficulty_level: 4,
+          estimated_time: 25
         },
+        tasks: [],
         options: [
           {
-            id: "option_1",
-            text: "Aggressively pursue venture capital funding with a revised pitch deck",
-            reasoning: "Your background gives you credibility with investors, and the market timing might be right for your industry.",
-            immediate_consequences: ["High time investment", "Team focus on fundraising", "Potential investor meetings"],
-            long_term_effects: ["Possible significant funding", "Diluted equity", "Investor oversight"],
+            id: 'option_1',
+            text: 'Focus on aggressive fundraising while maintaining current operations',
+            reasoning: 'Leverage existing investor relationships and market traction to secure bridge funding',
+            immediate_consequences: ['High time investment in fundraising', 'Continued burn rate', 'Team uncertainty'],
+            long_term_effects: ['Potential significant funding', 'Diluted equity', 'Investor oversight'],
             skill_development: { networking: 3, presentation: 2, strategic_thinking: 2 },
-            risk_level: "high",
-            resource_impact: {
-              budget_change: -5000,
-              time_required: "3-4 weeks",
-              team_involvement: ["founders", "key_employees"]
-            }
+            risk_level: 'high',
+            resource_impact: { budget_change: -15000, time_required: '3-4 weeks' }
           },
           {
-            id: "option_2", 
-            text: "Pivot to a leaner business model and bootstrap growth",
-            reasoning: "Reducing costs and focusing on revenue generation could provide sustainable growth without external funding.",
-            immediate_consequences: ["Cost reduction measures", "Product simplification", "Team restructuring"],
-            long_term_effects: ["Sustainable growth", "Maintained control", "Slower scaling"],
-            skill_development: { financial_management: 3, operations: 2, adaptability: 3 },
-            risk_level: "medium",
-            resource_impact: {
-              budget_change: 2000,
-              time_required: "2-3 weeks", 
-              team_involvement: ["core_team"]
-            }
-          },
-          {
-            id: "option_3",
-            text: "Explore strategic partnerships and revenue-sharing agreements",
-            reasoning: "Partnering with established companies could provide resources and market access while sharing risks.",
-            immediate_consequences: ["Partnership negotiations", "Revenue model adjustments", "Market validation"],
-            long_term_effects: ["Shared growth opportunities", "Strategic alliances", "Collaborative innovation"],
-            skill_development: { partnership: 3, negotiation: 2, business_development: 2 },
-            risk_level: "medium",
-            resource_impact: {
-              budget_change: -1000,
-              time_required: "4-5 weeks",
-              team_involvement: ["business_development", "legal"]
-            }
+            id: 'option_2',
+            text: 'Pivot to a leaner, profitable model immediately',
+            reasoning: 'Cut costs dramatically and focus on revenue generation to achieve profitability',
+            immediate_consequences: ['Significant cost reductions', 'Product simplification', 'Possible layoffs'],
+            long_term_effects: ['Sustainable operations', 'Maintained control', 'Slower growth potential'],
+            skill_development: { financial_management: 3, operations: 3, adaptability: 2 },
+            risk_level: 'medium',
+            resource_impact: { budget_change: 5000, time_required: '2-3 weeks' }
           }
         ],
-        ai_context: "As your AI mentor, I'll help you analyze each option based on your career path and previous decisions.",
-        learning_objectives: [
-          "Understand funding strategies for startups",
-          "Learn to balance risk and reward in critical decisions", 
-          "Develop skills in stakeholder management",
-          "Practice resource allocation under pressure"
-        ]
+        ai_context: "As your AI mentor, I'll analyze your comprehensive response across all tasks.",
+        learning_objectives: [],
+        total_points: 100
       }
-      
+
       setSimulation(mockSimulation)
     } catch (error) {
       console.error("Error loading simulation:", error)
@@ -102,69 +90,37 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
     }
   }
 
-  const handleOptionSelect = (optionId: string) => {
-    setSelectedOption(optionId)
+  const handleOptionSelect = (id: string) => {
+    setSelectedOption(prev => (prev === id ? null : id))
   }
 
   const handleSubmitDecision = async () => {
-    if (!selectedOption || !simulation) return
-    
+    if (!simulation || !selectedOption) return
     setIsLoading(true)
     try {
-      // Submit decision to backend
-      const result = await submitDecision(selectedOption, simulation.scenario.id, user.id, currentRound)
-      
+      const response = await fetch('/api/simulation/submit-complex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          scenarioId: simulation.scenario.id,
+          selectedOption,
+          round: currentRound
+        })
+      })
+
+      const result = await response.json()
       if (result.success) {
-        // Show results and feedback
-        setShowResult(true)
-        
-        // Record the decision for future AI generation
-        await recordSimulationData(user.id, simulation, selectedOption, result.feedback)
+        setAiResults(result.analysis)
+        setShowResults(true)
+      } else {
+        setAiResults(null)
+        setShowResults(true)
       }
     } catch (error) {
-      console.error("Error submitting decision:", error)
+      console.error('submit error', error)
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const submitDecision = async (optionId: string, scenarioId: string, userId: string, round: number) => {
-    // This would call your backend API
-    const response = await fetch('/api/simulation/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionId, scenarioId, userId, round })
-    })
-    return response.json()
-  }
-
-  const recordSimulationData = async (userId: string, simulation: SimulationResponse, selectedOption: string, feedback: any) => {
-    // Record user decision data for AI learning
-    const simulationData = {
-      userId,
-      scenarioId: simulation.scenario.id,
-      selectedOption,
-      feedback,
-      timestamp: new Date().toISOString(),
-      userContext: {
-        careerPath: user.career_path,
-        round: currentRound,
-        difficulty: simulation.scenario.difficulty_level
-      }
-    }
-    
-    // Store in localStorage for now, would be database in production
-    const existingData = JSON.parse(localStorage.getItem('simulationHistory') || '[]')
-    existingData.push(simulationData)
-    localStorage.setItem('simulationHistory', JSON.stringify(existingData))
-  }
-
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'high': return 'text-red-600 bg-red-50 border-red-200'
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-      case 'low': return 'text-green-600 bg-green-50 border-green-200'
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
     }
   }
 
@@ -173,7 +129,7 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Generating your personalized simulation...</p>
+          <p className="text-gray-600">Generating your personalized business simulation...</p>
         </div>
       </div>
     )
@@ -193,7 +149,6 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Link href="/student/dashboard">
             <Button variant="outline" size="sm">
@@ -211,12 +166,10 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
           </div>
         </div>
 
-        {/* Progress */}
         <div className="mb-6">
           <Progress value={(currentRound / 5) * 100} className="h-2" />
         </div>
 
-        {/* Scenario */}
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -226,8 +179,8 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
                   Difficulty: {simulation.scenario.difficulty_level}/5
                 </Badge>
               </div>
-              <Badge className={`${getRiskColor('medium')}`}>
-                {user.career_path}
+              <Badge className={`bg-gray-100 text-gray-800`}>
+                {user?.career_path}
               </Badge>
             </div>
           </CardHeader>
@@ -236,7 +189,7 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
               <h3 className="font-semibold mb-2">Context</h3>
               <p className="text-gray-700">{simulation.scenario.context}</p>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-2">Situation</h3>
               <p className="text-gray-700">{simulation.scenario.situation}</p>
@@ -258,7 +211,7 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-medium text-sm text-gray-600 mb-2">Constraints</h4>
                 <div className="flex flex-wrap gap-1">
@@ -284,10 +237,9 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
           </CardContent>
         </Card>
 
-        {/* Options */}
         <div className="space-y-4 mb-6">
           <h2 className="text-xl font-semibold">Your Options</h2>
-          {simulation.options.map((option, index) => (
+          {(simulation as any).options?.map((option: any, index: number) => (
             <Card 
               key={option.id}
               className={`cursor-pointer transition-all border-2 ${
@@ -313,7 +265,7 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
                     <p className={`text-sm mb-3 ${selectedOption === option.id ? 'text-gray-200' : 'text-gray-600'}`}>
                       {option.reasoning}
                     </p>
-                    
+
                     <div className="grid md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <h4 className={`font-medium mb-1 flex items-center gap-1 ${selectedOption === option.id ? 'text-white' : 'text-gray-900'}`}>
@@ -321,7 +273,7 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
                           Immediate Effects
                         </h4>
                         <ul className={`space-y-1 ${selectedOption === option.id ? 'text-gray-200' : 'text-gray-600'}`}>
-                          {option.immediate_consequences.map((consequence, i) => (
+                          {option.immediate_consequences?.map((consequence: string, i: number) => (
                             <li key={i} className="flex items-start gap-1">
                               <span className="text-gray-400">•</span>
                               {consequence}
@@ -329,14 +281,14 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
                           ))}
                         </ul>
                       </div>
-                      
+
                       <div>
                         <h4 className={`font-medium mb-1 flex items-center gap-1 ${selectedOption === option.id ? 'text-white' : 'text-gray-900'}`}>
                           <Target className="h-3 w-3" />
                           Long-term Impact
                         </h4>
                         <ul className={`space-y-1 ${selectedOption === option.id ? 'text-gray-200' : 'text-gray-600'}`}>
-                          {option.long_term_effects.map((effect, i) => (
+                          {option.long_term_effects?.map((effect: string, i: number) => (
                             <li key={i} className="flex items-start gap-1">
                               <span className="text-gray-400">•</span>
                               {effect}
@@ -353,12 +305,12 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
                           {option.risk_level} risk
                         </Badge>
                         <span className="text-sm text-gray-600">
-                          {option.resource_impact.time_required}
+                          {option.resource_impact?.time_required}
                         </span>
                       </div>
-                      
+
                       <div className="flex gap-1">
-                        {Object.entries(option.skill_development).map(([skill, points]) => (
+                        {Object.entries(option.skill_development || {}).map(([skill, points]) => (
                           <Badge key={skill} variant="secondary" className="text-xs">
                             +{points} {skill}
                           </Badge>
@@ -372,7 +324,6 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
           ))}
         </div>
 
-        {/* AI Context */}
         <Card className="mb-6 bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
@@ -387,8 +338,7 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
           </CardContent>
         </Card>
 
-        {/* Results */}
-        {showResult && selectedOption && (
+        {showResults && selectedOption && (
           <Card className="mb-6 bg-green-50 border-green-200">
             <CardHeader>
               <CardTitle className="text-green-900">Decision Results</CardTitle>
@@ -398,29 +348,29 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
                 <div>
                   <h3 className="font-semibold text-green-900 mb-2">Your Choice:</h3>
                   <p className="text-green-800">
-                    {simulation.options.find(opt => opt.id === selectedOption)?.text}
+                    {(simulation as any).options.find((opt: any) => opt.id === selectedOption)?.text}
                   </p>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold text-green-900 mb-2">AI Feedback:</h3>
                   <p className="text-green-800">
-                    Excellent decision! Your choice demonstrates strong entrepreneurial thinking and understanding of the Liberian business context. This approach will help develop your {user.career_path} skills.
+                    {aiResults?.summary || 'Excellent decision! Your choice demonstrates strong entrepreneurial thinking and understanding of the Liberian business context.'}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-green-200">
                   <div className="flex gap-2">
-                    <Badge className="bg-green-600 text-white">Score: 85/100</Badge>
+                    <Badge className="bg-green-600 text-white">Score: {aiResults?.score || 85}/100</Badge>
                     <Badge variant="outline" className="border-green-600 text-green-700">+3 Leadership</Badge>
                     <Badge variant="outline" className="border-green-600 text-green-700">+2 Strategy</Badge>
                   </div>
-                  
+
                   <Button 
                     onClick={() => {
-                      setCurrentRound(currentRound + 1)
+                      setCurrentRound(prev => prev + 1)
                       setSelectedOption(null)
-                      setShowResult(false)
+                      setShowResults(false)
                       loadSimulation()
                     }}
                     className="bg-green-600 hover:bg-green-700 text-white"
@@ -433,8 +383,7 @@ export function SimulationEngine({ user }: SimulationEngineProps) {
           </Card>
         )}
 
-        {/* Submit */}
-        {!showResult && (
+        {!showResults && (
           <div className="flex justify-center">
             <Button 
               onClick={handleSubmitDecision}

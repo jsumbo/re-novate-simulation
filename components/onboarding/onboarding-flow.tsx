@@ -465,7 +465,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-black">Gender</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {["Male", "Female", "Other"].map((gender) => (
+                  {['Male', 'Female', 'Other'].map((gender) => (
                     <Button
                       key={gender}
                       variant={onboardingData.gender === gender ? "default" : "outline"}
@@ -496,7 +496,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-black">Class/Grade</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {["10", "11", "12"].map((grade) => (
+                  {['10', '11', '12'].map((grade) => (
                     <Button
                       key={grade}
                       variant={onboardingData.studentClass === grade ? "default" : "outline"}
@@ -602,7 +602,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
           <div className="max-w-md mx-auto px-2">
             <div className="text-center mb-4 sm:mb-6">
               <h2 className="text-xl sm:text-2xl font-bold text-black mb-2">Create Your Avatar! ✨</h2>
-              <p className="text-sm sm:text-base text-gray-600 px-2">Make it uniquely yours!</p>
             </div>
             <AvatarBuilder
               selectedAvatar={onboardingData.avatar}
@@ -975,16 +974,10 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
           <Badge variant="outline" className="text-xs px-2 py-1 border-black text-black">
             {Math.round(progress)}% Complete
           </Badge>
-          {progress >= 25 && progress < 50 && (
-            <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
-              <Star className="h-3 w-3 text-black" />
-              <span>Great start! Keep going! 🌟</span>
-            </div>
-          )}
+          {/* Optional milestone UI for 25-50% progress can be added here */}
           {progress >= 50 && progress < 75 && (
             <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
               <Trophy className="h-3 w-3 text-black" />
-              <span>Halfway there! You're doing amazing! 🚀</span>
             </div>
           )}
           {progress >= 75 && progress < 100 && (
