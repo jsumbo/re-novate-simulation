@@ -15,6 +15,10 @@ RE-Novate is an interactive entrepreneurial skills development platform designed
 
 **Production App:** [https://capstone-solution-c30f.onrender.com](https://capstone-solution-c30f.onrender.com)
 
+### Demo video
+
+- Demo video: [https://drive.google.com/drive/folders/1qMHbyRWP0HLgCmg68vh431KuGzEm52fE?usp=sharing] (https://drive.google.com/drive/folders/1qMHbyRWP0HLgCmg68vh431KuGzEm52fE?usp=sharing)
+
 ### Test Credentials
 TRIBE Academy 
 TRIBE001
