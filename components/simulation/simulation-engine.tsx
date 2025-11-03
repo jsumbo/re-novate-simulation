@@ -98,20 +98,30 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
     if (!simulation || !selectedOption) return
     setIsLoading(true)
     try {
-      const response = await fetch('/api/simulation/submit-complex', {
+      const response = await fetch('/api/simulation/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user?.id,
           scenarioId: simulation.scenario.id,
-          selectedOption,
+          optionId: selectedOption,
           round: currentRound
         })
       })
 
+      if (!response.ok) {
+        // Try to read text for debugging (server may return HTML error page)
+        const text = await response.text()
+        console.error('Submit decision failed, server response:', text)
+        setAiResults(null)
+        setShowResults(true)
+        return
+      }
+
       const result = await response.json()
-      if (result.success) {
-        setAiResults(result.analysis)
+      if (result?.success) {
+        // API returns feedback under `feedback` key
+        setAiResults(result.feedback || result.analysis || null)
         setShowResults(true)
       } else {
         setAiResults(null)
@@ -129,7 +139,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Generating your personalized business simulation...</p>
+          <p className="text-gray-600">Generating simulation...</p>
         </div>
       </div>
     )

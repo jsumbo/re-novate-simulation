@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
-import { SimulationEngine } from "@/components/simulation/simulation-engine"
+import { EnhancedSimulationEngine } from "@/components/simulation/simulation-engine"
 
 export default async function StudentSimulationPage() {
   const user = await getSession()
@@ -15,7 +15,7 @@ export default async function StudentSimulationPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <SimulationEngine user={user} />
+  <EnhancedSimulationEngine user={user} />
     </div>
   )
 }
