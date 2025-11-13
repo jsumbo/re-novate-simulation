@@ -115,7 +115,7 @@ BEGIN
   WHERE ss.user_id = p_user_id
     AND (p_status IS NULL OR ss.status = p_status)
   ORDER BY ss.updated_at DESC, ss.created_at DESC;
-END;x
+END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to get simulation progress summary for a user

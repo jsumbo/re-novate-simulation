@@ -65,7 +65,40 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
   }, [simulation, primaryTask])
 
   useEffect(() => {
-    loadSimulation(1, [])
+    // Check for existing ongoing session first
+    const loadExistingSession = async () => {
+      if (user?.id) {
+        try {
+          const sessionResponse = await fetch('/api/simulation/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              careerPath: user.career_path,
+            }),
+          })
+          
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json()
+            if (sessionData.success && sessionData.sessionId) {
+              setSessionId(sessionData.sessionId)
+              // If there's an existing session, load the current round
+              if (sessionData.existing && sessionData.currentRound) {
+                setCurrentRound(sessionData.currentRound)
+                loadSimulation(sessionData.currentRound, [])
+                return
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading existing session:', error)
+        }
+      }
+      // If no existing session, start fresh
+      loadSimulation(1, [])
+    }
+    
+    loadExistingSession()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -537,12 +570,24 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
               </section>
 
               {aiResults && aiResults.ai_feedback && typeof aiResults.ai_feedback === 'object' && aiResults.ai_feedback.overall_assessment ? (
-                <DetailedFeedbackComponent
-                  feedback={aiResults.ai_feedback}
-                  performanceScore={aiResults.outcome_score}
-                  skillsGained={aiResults.skills_gained || {}}
-                  onContinue={handleNextRound}
-                />
+                <>
+                  <DetailedFeedbackComponent
+                    feedback={aiResults.ai_feedback}
+                    performanceScore={aiResults.outcome_score}
+                    skillsGained={aiResults.skills_gained || {}}
+                    onContinue={handleNextRound}
+                  />
+                  {/* Additional Next Round button for visibility */}
+                  <div className="flex justify-center pt-4 border-t border-green-200 mt-6">
+                    <Button
+                      onClick={handleNextRound}
+                      className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
+                      disabled={currentRound >= MAX_ROUNDS}
+                    >
+                      {currentRound >= MAX_ROUNDS ? 'Simulation Complete' : 'Next Round'}
+                    </Button>
+                  </div>
+                </>
               ) : aiResults ? (
                 <section className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
@@ -599,7 +644,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
                 </section>
               ) : null}
 
-              <div className="flex items-center justify-between pt-4 border-t border-green-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t border-green-200 gap-3">
                 <div className="text-sm text-green-700">
                   {currentRound >= MAX_ROUNDS
                     ? 'You have completed all rounds for this simulation.'
@@ -607,7 +652,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
                 </div>
                 <Button
                   onClick={handleNextRound}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                   disabled={currentRound >= MAX_ROUNDS}
                 >
                   {currentRound >= MAX_ROUNDS ? 'Simulation Complete' : 'Next Round'}

@@ -377,7 +377,7 @@ export function DetailedFeedbackComponent({
 
       {/* Continue Button */}
       <div className="flex justify-center pt-6">
-        <Button onClick={onContinue} size="lg" className="px-8">
+        <Button onClick={onContinue} size="lg" className="px-8 w-full sm:w-auto">
           Continue to Next Round
         </Button>
       </div>

@@ -254,12 +254,8 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
         <div className="border-b border-gray-200 p-3 sm:p-4 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm sm:text-base lg:text-lg shrink-0">
-                🤖
-              </div>
               <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-black truncate">Noni AI Mentor</h1>
-                <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">Your friendly entrepreneurship guide</p>
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-black truncate">Noni</h1>
               </div>
             </div>
           </div>

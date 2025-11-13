@@ -15,27 +15,47 @@ export async function POST(request: NextRequest) {
 
     const supabase = await getSupabaseServerClient()
     if (!supabase) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      console.error('Supabase configuration check:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+        urlLength: supabaseUrl?.length || 0,
+        keyLength: supabaseKey?.length || 0
+      })
+      
       return NextResponse.json(
-        { success: false, error: 'Database not available' },
+        { 
+          success: false, 
+          error: 'Database not available. Please check your Supabase configuration in .env file. Required: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY' 
+        },
         { status: 500 }
       )
     }
 
     // Check if user has an ongoing session
-    const { data: existingSession } = await supabase
+    const { data: existingSessions, error: queryError } = await supabase
       .from('simulation_sessions')
-      .select('id, current_round, total_rounds, status')
+      .select('id, current_round, total_rounds, status, progress')
       .eq('user_id', userId)
       .eq('status', 'ongoing')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
 
-    if (existingSession) {
+    // If query error is not "no rows found", log it
+    if (queryError && queryError.code !== 'PGRST116') {
+      console.error('Error querying existing sessions:', queryError)
+    }
+
+    if (existingSessions && existingSessions.length > 0) {
+      const existingSession = existingSessions[0]
       return NextResponse.json({
         success: true,
         sessionId: existingSession.id,
         existing: true,
+        currentRound: existingSession.current_round || 1,
+        progress: existingSession.progress || 0,
       })
     }
 
@@ -55,8 +75,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (!sessionResult.success) {
+      console.error('Failed to create simulation session:', sessionResult.error)
       return NextResponse.json(
-        { success: false, error: sessionResult.error || 'Failed to create session' },
+        { 
+          success: false, 
+          error: sessionResult.error || 'Failed to create session',
+          details: 'Make sure the simulation_sessions table exists in your Supabase database. Run the migration: supabase/migrations/create_simulation_sessions.sql'
+        },
         { status: 500 }
       )
     }
