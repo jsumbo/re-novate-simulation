@@ -46,6 +46,7 @@ import {
   Leaf,
 } from "lucide-react"
 import { logout } from "@/lib/auth/actions"
+import { StudentLayout } from "./student-layout"
 
 interface StudentDashboardProps {
   user: any
@@ -268,76 +269,7 @@ export function StudentDashboard({ user, progress, sessions, stats }: StudentDas
   const weakestSkill = progress.length > 0 ? progress.reduce((min, p) => (p.skill_level < min.skill_level ? p : min), progress[0]) : null
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Sidebar - Hidden on mobile, visible on desktop */}
-      <div className="hidden lg:flex w-64 bg-black text-white p-6 flex-col">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold">RE-Novate</h2>
-          <p className="text-gray-400 text-sm">{user.username || user.participant_id}</p>
-        </div>
-
-        <nav className="flex-1 space-y-2">
-          <Link
-            href="/student/dashboard"
-            className={`flex items-center gap-3 px-3 py-2 rounded ${pathname === '/student/dashboard'
-              ? 'bg-white text-black font-medium'
-              : 'hover:bg-gray-800 text-gray-300 hover:text-white'
-              }`}
-          >
-            <Target className="h-4 w-4" />
-            Dashboard
-          </Link>
-          <Link
-            href="/student/simulations"
-            className={`flex items-center gap-3 px-3 py-2 rounded ${pathname === '/student/simulations'
-              ? 'bg-white text-black font-medium'
-              : 'hover:bg-gray-800 text-gray-300 hover:text-white'
-              }`}
-          >
-            <Play className="h-4 w-4" />
-            Simulations
-          </Link>
-          <Link
-            href="/student/profile"
-            className={`flex items-center gap-3 px-3 py-2 rounded ${pathname === '/student/profile'
-              ? 'bg-white text-black font-medium'
-              : 'hover:bg-gray-800 text-gray-300 hover:text-white'
-              }`}
-          >
-            <Users className="h-4 w-4" />
-            Profile
-          </Link>
-          <Link
-            href="/student/community"
-            className={`flex items-center gap-3 px-3 py-2 rounded ${pathname === '/student/community'
-              ? 'bg-white text-black font-medium'
-              : 'hover:bg-gray-800 text-gray-300 hover:text-white'
-              }`}
-          >
-            <Users className="h-4 w-4" />
-            Community
-          </Link>
-          <Link
-            href="/student/mentor"
-            className={`flex items-center gap-3 px-3 py-2 rounded ${pathname === '/student/mentor'
-              ? 'bg-white text-black font-medium'
-              : 'hover:bg-gray-800 text-gray-300 hover:text-white'
-              }`}
-          >
-            <div className="h-4 w-4 text-center">🤖</div>
-            Noni AI Mentor
-          </Link>
-        </nav>
-
-        <form action={logout} className="mt-auto">
-          <button className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white w-full text-left">
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </form>
-      </div>
-
-      {/* Main Content */}
+    <StudentLayout user={user}>
       <div className="flex-1 p-4 lg:p-8">
         {/* Mobile Header */}
         <div className="lg:hidden mb-6 p-4 bg-black text-white rounded-lg">
@@ -588,6 +520,6 @@ export function StudentDashboard({ user, progress, sessions, stats }: StudentDas
           </div>
         </div>
       </div>
-    </div>
+    </StudentLayout>
   )
 }

@@ -610,6 +610,35 @@ export async function getUserSessions(userId: string) {
     return { success: true, data: [] };
   }
 
+  // First try simulation_sessions table (new format)
+  const { data: simulationSessions, error: simError } = await supabase
+    .from("simulation_sessions")
+    .select(`
+      id,
+      user_id,
+      title,
+      description,
+      status,
+      progress,
+      current_round,
+      total_rounds,
+      session_data,
+      created_at,
+      updated_at
+    `)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (!simError && simulationSessions && simulationSessions.length > 0) {
+    // Ensure session_data is present (default to empty object if null)
+    const formattedSessions = simulationSessions.map(session => ({
+      ...session,
+      session_data: session.session_data || {},
+    }))
+    return { success: true, data: formattedSessions };
+  }
+
+  // Fallback to old sessions table if simulation_sessions doesn't exist or has no data
   const { data: sessions, error } = await supabase
     .from("sessions")
     .select(`
@@ -630,7 +659,7 @@ export async function getUserSessions(userId: string) {
   }
 
   // Transform sessions into simulation session format
-  const simulationSessions = sessions?.map(session => ({
+  const transformedSessions = sessions?.map(session => ({
     id: session.id,
     user_id: userId,
     title: `Business Simulation ${session.current_round}/${session.total_rounds}`,
@@ -640,11 +669,12 @@ export async function getUserSessions(userId: string) {
     progress: Math.round((session.current_round / session.total_rounds) * 100),
     current_round: session.current_round,
     total_rounds: session.total_rounds,
+    session_data: {},
     created_at: session.created_at || session.started_at,
     updated_at: session.completed_at || session.started_at
   })) || [];
 
-  return { success: true, data: simulationSessions };
+  return { success: true, data: transformedSessions };
 }
 
 // Update session progress and status

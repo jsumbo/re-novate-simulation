@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
       context,
       userId,
       round = 1,
+      sessionId,
     }: {
       option?: SimulationOption
       task?: {
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
       context?: SimulationContext
       userId?: string
       round?: number
+      sessionId?: string
     } = await request.json()
 
     if (!scenario) {
@@ -117,6 +119,26 @@ export async function POST(request: NextRequest) {
         await updateUserProgress(userId, skillsGained, outcomeScore, supabase)
       }
 
+      // Update session progress
+      if (sessionId && supabase) {
+        const progress = Math.round((round / 5) * 100)
+        const isCompleted = round >= 5
+        
+        const { error: sessionError } = await supabase
+          .from('simulation_sessions')
+          .update({
+            current_round: round,
+            progress: progress,
+            status: isCompleted ? 'completed' : 'ongoing',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId)
+        
+        if (sessionError) {
+          console.error('Error updating session:', sessionError)
+        }
+      }
+
       return NextResponse.json({
         success: true,
         feedback: {
@@ -182,6 +204,26 @@ export async function POST(request: NextRequest) {
 
     if (userId) {
       await updateUserProgress(userId, skillsGained, outcomeScore, supabase)
+    }
+
+    // Update session progress
+    if (sessionId && supabase) {
+      const progress = Math.round((round / 5) * 100)
+      const isCompleted = round >= 5
+      
+      const { error: sessionError } = await supabase
+        .from('simulation_sessions')
+        .update({
+          current_round: round,
+          progress: progress,
+          status: isCompleted ? 'completed' : 'ongoing',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId)
+      
+      if (sessionError) {
+        console.error('Error updating session:', sessionError)
+      }
     }
 
     return NextResponse.json({

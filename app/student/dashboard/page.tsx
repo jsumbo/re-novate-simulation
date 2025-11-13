@@ -24,14 +24,12 @@ export default async function StudentDashboardPage() {
   const { progress, sessions, recentDecisions, stats } = dashboardResult.data
 
   return (
-    <div className="min-h-screen bg-white">
-      <StudentDashboard
-        user={user}
-        progress={progress}
-        sessions={sessions}
-        recentDecisions={recentDecisions}
-        stats={stats}
-      />
-    </div>
+    <StudentDashboard
+      user={user}
+      progress={progress}
+      sessions={sessions}
+      recentDecisions={recentDecisions}
+      stats={stats}
+    />
   )
 }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Clock, Target, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
+import { Clock, Target, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import type { DetailedFeedback, SimulationContext, SimulationOption, SimulationResponse, SimulationTask } from "@/lib/simulation/types"
 import { DetailedFeedbackComponent } from "@/components/simulation/detailed-feedback"
@@ -37,6 +37,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
   const [showResults, setShowResults] = useState(false)
   const [aiResults, setAiResults] = useState<FeedbackPayload | null>(null)
   const [usedScenarios, setUsedScenarios] = useState<Array<{ id: string; title: string }>>([])
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   // Find the primary task (either multiple choice with options, or essay/short_answer)
   const primaryTask: SimulationTask | null = useMemo(() => {
@@ -92,6 +93,25 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
     setAiResults(null)
 
     try {
+      // Create or get session on first round
+      if (roundToLoad === 1 && !sessionId) {
+        const sessionResponse = await fetch('/api/simulation/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user?.id,
+            careerPath: user?.career_path,
+          }),
+        })
+        
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json()
+          if (sessionData.success && sessionData.sessionId) {
+            setSessionId(sessionData.sessionId)
+          }
+        }
+      }
+
       const response = await fetch('/api/simulation/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,6 +201,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           } : undefined,
           context: simulationContext,
           round: currentRound,
+          sessionId: sessionId,
         }),
       })
 
@@ -204,6 +225,23 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           }
         }
         setAiResults(feedback as FeedbackPayload)
+
+        // Update session progress
+        if (sessionId) {
+          const progress = Math.round((currentRound / MAX_ROUNDS) * 100)
+          const isCompleted = currentRound >= MAX_ROUNDS
+          
+          await fetch('/api/simulation/session', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              currentRound,
+              progress,
+              status: isCompleted ? 'completed' : 'ongoing',
+            }),
+          })
+        }
       } else {
         setAiResults(null)
       }
@@ -217,14 +255,51 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
     }
   }
 
-  const handleNextRound = () => {
+  const handleNextRound = async () => {
     if (currentRound >= MAX_ROUNDS) {
       setShowResults(false)
+      // Mark session as completed
+      if (sessionId) {
+        try {
+          await fetch('/api/simulation/session', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              currentRound: MAX_ROUNDS,
+              progress: 100,
+              status: 'completed',
+            }),
+          })
+        } catch (error) {
+          console.error('Error completing session:', error)
+        }
+      }
       return
     }
     const nextRound = currentRound + 1
     setCurrentRound(nextRound)
     setShowResults(false)
+    
+    // Update session progress
+    if (sessionId) {
+      const progress = Math.round((nextRound / MAX_ROUNDS) * 100)
+      try {
+        await fetch('/api/simulation/session', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            currentRound: nextRound,
+            progress,
+            status: 'ongoing',
+          }),
+        })
+      } catch (error) {
+        console.error('Error updating session progress:', error)
+      }
+    }
+    
     loadSimulation(nextRound)
   }
 
@@ -251,16 +326,10 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
   }
 
   return (
-    <StudentLayout user={user}>
+    <StudentLayout user={{ username: user?.id, participant_id: user?.id }}>
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
-          <Link href="/student/dashboard">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Business Simulation</h1>
             <p className="text-gray-600">Round {currentRound} of {MAX_ROUNDS}</p>

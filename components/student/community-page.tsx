@@ -4,12 +4,13 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Users, Target, LogOut, Search, Trophy } from "lucide-react"
+import { Users, Target, LogOut, Search, Trophy } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { logout } from "@/lib/auth/actions"
 import Link from "next/link"
+import { StudentLayout } from "./student-layout"
 
 export interface CommunityStudent {
   id: string
@@ -49,47 +50,10 @@ export function CommunityPage({ user, initialData }: CommunityPageProps) {
   )
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-black text-white p-6 flex flex-col">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold">RE-Novate</h2>
-          <p className="text-gray-400 text-sm">{user.username || user.participant_id}</p>
-        </div>
-        
-        <nav className="flex-1 space-y-2">
-          <Link href="/student/dashboard" className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white">
-            <Target className="h-4 w-4" />
-            Dashboard
-          </Link>
-          <Link href="/student/profile" className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white">
-            <Users className="h-4 w-4" />
-            Profile
-          </Link>
-          <a href="/student/community" className="flex items-center gap-3 px-3 py-2 rounded bg-white text-black font-medium">
-            <Users className="h-4 w-4" />
-            Community
-          </a>
-        </nav>
-        
-        <form action={logout} className="mt-auto">
-          <button className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white w-full text-left">
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </form>
-      </div>
-
-      {/* Main Content */}
+    <StudentLayout user={user}>
       <div className="flex-1 p-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
-            <Link href="/student/dashboard">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
             <h1 className="text-3xl font-bold">Community</h1>
           </div>
 
@@ -247,6 +211,6 @@ export function CommunityPage({ user, initialData }: CommunityPageProps) {
           </Tabs>
         </div>
       </div>
-    </div>
+    </StudentLayout>
   )
 }

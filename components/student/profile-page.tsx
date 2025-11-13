@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Camera, Save, ArrowLeft, Users, Target, LogOut } from "lucide-react"
+import { Camera, Save, Users, Target, LogOut } from "lucide-react"
 import { logout } from "@/lib/auth/actions"
 import Link from "next/link"
+import { StudentLayout } from "./student-layout"
 
 interface ProfilePageProps {
   user: any
@@ -35,47 +36,10 @@ export function ProfilePage({ user }: ProfilePageProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-black text-white p-6 flex flex-col">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold">RE-Novate</h2>
-          <p className="text-gray-400 text-sm">{user.username || user.participant_id}</p>
-        </div>
-        
-        <nav className="flex-1 space-y-2">
-          <Link href="/student/dashboard" className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white">
-            <Target className="h-4 w-4" />
-            Dashboard
-          </Link>
-          <a href="/student/profile" className="flex items-center gap-3 px-3 py-2 rounded bg-white text-black font-medium">
-            <Users className="h-4 w-4" />
-            Profile
-          </a>
-          <Link href="/student/community" className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white">
-            <Users className="h-4 w-4" />
-            Community
-          </Link>
-        </nav>
-        
-        <form action={logout} className="mt-auto">
-          <button className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white w-full text-left">
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </form>
-      </div>
-
-      {/* Main Content */}
+    <StudentLayout user={user}>
       <div className="flex-1 p-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
-            <Link href="/student/dashboard">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
             <h1 className="text-3xl font-bold">My Profile</h1>
           </div>
 
@@ -151,6 +115,6 @@ export function ProfilePage({ user }: ProfilePageProps) {
           </Card>
         </div>
       </div>
-    </div>
+    </StudentLayout>
   )
 }

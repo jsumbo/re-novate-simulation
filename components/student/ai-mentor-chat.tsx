@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Send, Users, Target, LogOut, Loader2, Paperclip, Mic, X, Download, Eye } from "lucide-react"
+import { Send, Users, Target, LogOut, Loader2, Paperclip, Mic, X, Download, Eye } from "lucide-react"
 import { logout } from "@/lib/auth/actions"
 import { uploadFileToStorage, validateFile, formatFileSize, getFileIcon } from "@/lib/storage/file-upload"
 import { saveChatMessage, getChatHistory, type ChatMessage } from "@/lib/ai/chat-actions"
 import Link from "next/link"
 import Image from "next/image"
+import { StudentLayout } from "./student-layout"
 
 interface Message {
   id: string
@@ -247,72 +248,25 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Sidebar - Hidden on mobile */}
-      <div className="hidden lg:flex w-64 bg-black text-white p-6 flex-col">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold">RE-Novate</h2>
-          <p className="text-gray-400 text-sm">{user.username || user.participant_id}</p>
-        </div>
-        
-        <nav className="flex-1 space-y-2">
-          <Link href="/student/dashboard" className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white">
-            <Target className="h-4 w-4" />
-            Dashboard
-          </Link>
-          <Link href="/student/profile" className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white">
-            <Users className="h-4 w-4" />
-            Profile
-          </Link>
-          <Link href="/student/community" className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white">
-            <Users className="h-4 w-4" />
-            Community
-          </Link>
-          <a href="/student/mentor" className="flex items-center gap-3 px-3 py-2 rounded bg-white text-black font-medium">
-            <div className="h-4 w-4 text-center">🤖</div>
-            Noni AI Mentor
-          </a>
-        </nav>
-        
-        <form action={logout} className="mt-auto">
-          <button className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-800 text-gray-300 hover:text-white w-full text-left">
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </form>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+    <StudentLayout user={user}>
+      <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
-        <div className="border-b border-gray-200 p-4 lg:p-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-            <Link href="/student/dashboard" className="lg:hidden">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-            </Link>
-            <Link href="/student/dashboard" className="hidden lg:block">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm lg:text-lg">
+        <div className="border-b border-gray-200 p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm sm:text-base lg:text-lg shrink-0">
                 🤖
               </div>
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-black">Noni AI Mentor</h1>
-                <p className="text-gray-600 text-xs lg:text-sm">Your friendly entrepreneurship guide</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-black truncate">Noni AI Mentor</h1>
+                <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">Your friendly entrepreneurship guide</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
           {isLoadingHistory ? (
             <div className="flex justify-center items-center h-32">
               <div className="flex items-center gap-2 text-gray-500">
@@ -327,13 +281,13 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-lg p-4 ${
+                  className={`max-w-[85%] sm:max-w-[75%] lg:max-w-[70%] rounded-lg p-3 sm:p-4 ${
                     message.role === 'user'
                       ? 'bg-black text-white'
                       : 'bg-gray-100 text-black border border-gray-200'
                   }`}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
                   
                   {/* File attachment display */}
                   {message.file_url && (
@@ -393,10 +347,10 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
           
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 text-black border border-gray-200 rounded-lg p-4 max-w-[70%]">
+              <div className="bg-gray-100 text-black border border-gray-200 rounded-lg p-3 sm:p-4 max-w-[85%] sm:max-w-[75%] lg:max-w-[70%]">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <p className="text-sm">Noni is thinking...</p>
+                  <p className="text-xs sm:text-sm">Noni is thinking...</p>
                 </div>
               </div>
             </div>
@@ -406,32 +360,32 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-200 p-4 lg:p-6">
+        <div className="border-t border-gray-200 p-3 sm:p-4 lg:p-6 bg-white">
           {/* File Preview */}
           {filePreview && (
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium text-gray-700">File to upload:</h4>
+                <h4 className="text-xs sm:text-sm font-medium text-gray-700">File to upload:</h4>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={removeFilePreview}
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 shrink-0"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
               
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getFileIcon(filePreview.type)}</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{filePreview.name}</p>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-xl sm:text-2xl shrink-0">{getFileIcon(filePreview.type)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{filePreview.name}</p>
                   <p className="text-xs text-gray-500">{formatFileSize(filePreview.size)}</p>
                 </div>
                 
                 {/* Image preview */}
                 {filePreview.type.startsWith('image/') && (
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                     <Image
                       src={filePreview.url}
                       alt="Preview"
@@ -445,7 +399,7 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             {/* File input */}
             <input
               ref={fileInputRef}
@@ -461,7 +415,7 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading || isUploading}
-              className="shrink-0"
+              className="shrink-0 h-9 sm:h-10 w-9 sm:w-10 p-0"
             >
               <Paperclip className="h-4 w-4" />
             </Button>
@@ -472,7 +426,7 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
               size="sm"
               onClick={handleMicrophoneClick}
               disabled={isLoading}
-              className={`shrink-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
+              className={`shrink-0 h-9 sm:h-10 w-9 sm:w-10 p-0 ${isRecording ? 'bg-red-100 text-red-600 border-red-300' : ''}`}
             >
               <Mic className="h-4 w-4" />
             </Button>
@@ -482,8 +436,8 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask Noni anything about entrepreneurship, business, or your learning journey..."
-              className="flex-1"
+              placeholder="Ask Noni anything..."
+              className="flex-1 text-sm sm:text-base h-9 sm:h-10"
               disabled={isLoading || isUploading}
             />
 
@@ -491,7 +445,7 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
             <Button 
               onClick={handleSendMessage}
               disabled={(!inputMessage.trim() && !filePreview) || isLoading || isUploading}
-              className="bg-black hover:bg-gray-800 text-white shrink-0"
+              className="bg-black hover:bg-gray-800 text-white shrink-0 h-9 sm:h-10 w-9 sm:w-10 p-0"
             >
               {isLoading || isUploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -501,9 +455,12 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
             </Button>
           </div>
           
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-gray-500">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-2 gap-1 sm:gap-0">
+            <p className="text-xs text-gray-500 hidden sm:block">
               Try asking: "How do I improve my leadership skills?" or upload files for feedback
+            </p>
+            <p className="text-xs text-gray-500 sm:hidden">
+              Ask questions or upload files
             </p>
             {isUploading && (
               <p className="text-xs text-blue-600">Uploading file...</p>
@@ -511,6 +468,6 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
           </div>
         </div>
       </div>
-    </div>
+    </StudentLayout>
   )
 }

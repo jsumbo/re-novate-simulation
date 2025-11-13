@@ -75,15 +75,28 @@ export async function getStudentDashboardData(userId: string) {
       console.error('Error fetching progress:', progressError)
     }
 
-    // Get sessions data
-    const { data: sessionsData, error: sessionsError } = await supabase
-      .from('sessions')
+    // Get simulation_sessions data (new format)
+    const { data: simulationSessionsData, error: simSessionsError } = await supabase
+      .from('simulation_sessions')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    if (sessionsError) {
-      console.error('Error fetching sessions:', sessionsError)
+    // Fallback to old sessions table if simulation_sessions doesn't exist
+    let sessionsData = simulationSessionsData
+    if (simSessionsError && simSessionsError.code === 'PGRST116') {
+      const { data: oldSessionsData, error: sessionsError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      
+      if (sessionsError) {
+        console.error('Error fetching sessions:', sessionsError)
+      }
+      sessionsData = oldSessionsData
+    } else if (simSessionsError) {
+      console.error('Error fetching simulation sessions:', simSessionsError)
     }
 
     // Get recent decisions with scenario titles
@@ -109,9 +122,12 @@ export async function getStudentDashboardData(userId: string) {
     const progress = progressData || []
 
     const totalSessions = sessions.length
-    const completedSessions = sessions.filter(s => s.status === 'completed').length
+    const completedSessions = sessions.filter(s => {
+      const status = s.status?.toLowerCase()
+      return status === 'completed' || status === 'done' || status === 'finished'
+    }).length
     const averageScore = decisions.length > 0 
-      ? Math.round(decisions.reduce((sum, d) => sum + d.outcome_score, 0) / decisions.length)
+      ? Math.round(decisions.reduce((sum, d) => sum + (d.outcome_score || 0), 0) / decisions.length)
       : 0
 
     return {
