@@ -215,11 +215,108 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none text-amber-800">
-                  {task.prompt.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-3 last:mb-0 whitespace-pre-wrap">
-                      {paragraph}
-                    </p>
-                  ))}
+                  {(() => {
+                    // Parse markdown formatting
+                    const parseMarkdown = (text: string) => {
+                      const parts: React.ReactNode[] = []
+                      let lastIndex = 0
+                      const boldRegex = /\*\*(.+?)\*\*/g
+                      let match
+                      
+                      while ((match = boldRegex.exec(text)) !== null) {
+                        // Add text before the match
+                        if (match.index > lastIndex) {
+                          parts.push(text.substring(lastIndex, match.index))
+                        }
+                        // Add bold text
+                        parts.push(<strong key={`bold-${match.index}`}>{match[1]}</strong>)
+                        lastIndex = match.index + match[0].length
+                      }
+                      // Add remaining text
+                      if (lastIndex < text.length) {
+                        parts.push(text.substring(lastIndex))
+                      }
+                      
+                      return parts.length > 0 ? parts : text
+                    }
+                    
+                    const lines = task.prompt.split('\n')
+                    const elements: React.ReactNode[] = []
+                    let currentList: React.ReactNode[] = []
+                    let listType: 'ul' | 'ol' | null = null
+                    
+                    // Helper to close current list
+                    const closeCurrentList = () => {
+                      if (currentList.length > 0 && listType) {
+                        if (listType === 'ul') {
+                          elements.push(
+                            <ul key={`list-${elements.length}`} className="mb-3 ml-4 list-disc space-y-1">
+                              {currentList}
+                            </ul>
+                          )
+                        } else {
+                          elements.push(
+                            <ol key={`list-${elements.length}`} className="mb-3 ml-4 list-decimal space-y-1">
+                              {currentList}
+                            </ol>
+                          )
+                        }
+                        currentList = []
+                        listType = null
+                      }
+                    }
+                    
+                    lines.forEach((line, index) => {
+                      const trimmed = line.trim()
+                      const isEmpty = trimmed.length === 0
+                      
+                      // Handle list items
+                      if (trimmed.startsWith('- ')) {
+                        if (listType !== 'ul') {
+                          closeCurrentList()
+                          listType = 'ul'
+                        }
+                        currentList.push(
+                          <li key={index}>{parseMarkdown(trimmed.substring(2))}</li>
+                        )
+                        return
+                      }
+                      
+                      // Handle numbered list items
+                      const numberedMatch = trimmed.match(/^\d+\.\s(.+)$/)
+                      if (numberedMatch) {
+                        if (listType !== 'ol') {
+                          closeCurrentList()
+                          listType = 'ol'
+                        }
+                        currentList.push(
+                          <li key={index}>{parseMarkdown(numberedMatch[1])}</li>
+                        )
+                        return
+                      }
+                      
+                      // Close current list if any
+                      closeCurrentList()
+                      
+                      // Handle empty lines
+                      if (isEmpty) {
+                        elements.push(<div key={index} className="mb-2" />)
+                        return
+                      }
+                      
+                      // Regular paragraph
+                      elements.push(
+                        <p key={index} className="mb-3 last:mb-0">
+                          {parseMarkdown(line)}
+                        </p>
+                      )
+                    })
+                    
+                    // Close any remaining list
+                    closeCurrentList()
+                    
+                    return elements
+                  })()}
                 </div>
               </CardContent>
             </Card>
