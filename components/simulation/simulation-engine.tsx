@@ -8,6 +8,8 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Clock, Target, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import type { DetailedFeedback, SimulationContext, SimulationOption, SimulationResponse, SimulationTask } from "@/lib/simulation/types"
+import { DetailedFeedbackComponent } from "@/components/simulation/detailed-feedback"
+import { TaskInput } from "@/components/simulation/task-input"
 
 interface EnhancedSimulationEngineProps {
   user: {
@@ -28,15 +30,26 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null)
   const [simulationContext, setSimulationContext] = useState<SimulationContext | null>(null)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [taskResponse, setTaskResponse] = useState<any>(null)
   const [currentRound, setCurrentRound] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [showResults, setShowResults] = useState(false)
   const [aiResults, setAiResults] = useState<FeedbackPayload | null>(null)
   const [usedScenarios, setUsedScenarios] = useState<Array<{ id: string; title: string }>>([])
 
-  const decisionTask: SimulationTask | null = useMemo(() => {
-    return simulation?.tasks?.find((task) => (task.options?.length ?? 0) > 0) ?? null
+  // Find the primary task (either multiple choice with options, or essay/short_answer)
+  const primaryTask: SimulationTask | null = useMemo(() => {
+    if (!simulation?.tasks || simulation.tasks.length === 0) return null
+    // First, try to find a multiple choice task with options
+    const mcTask = simulation.tasks.find((task) => (task.options?.length ?? 0) > 0)
+    if (mcTask) return mcTask
+    // Otherwise, find the first required task (essay, short_answer, etc.)
+    return simulation.tasks.find((task) => task.required) || simulation.tasks[0]
   }, [simulation])
+
+  const decisionTask = useMemo(() => {
+    return primaryTask && (primaryTask.options?.length ?? 0) > 0 ? primaryTask : null
+  }, [primaryTask])
 
   const decisionOptions: SimulationOption[] = decisionTask?.options ?? []
 
@@ -46,8 +59,8 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
 
   const otherTasks = useMemo(() => {
     if (!simulation?.tasks) return []
-    return simulation.tasks.filter((task) => task.id !== decisionTask?.id)
-  }, [simulation, decisionTask])
+    return simulation.tasks.filter((task) => task.id !== primaryTask?.id)
+  }, [simulation, primaryTask])
 
   useEffect(() => {
     loadSimulation(1, [])
@@ -128,8 +141,26 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
     setSelectedOption((prev) => (prev === id ? null : id))
   }
 
-  const handleSubmitDecision = async () => {
-    if (!simulation || !selectedOptionDetails) return
+  const handleTaskResponse = async (response: any) => {
+    setTaskResponse(response)
+    if (response.type === 'option') {
+      setSelectedOption(response.value)
+    } else if (response.type === 'text') {
+      // Auto-submit text responses
+      await handleSubmitDecision(response)
+    }
+  }
+
+  const handleSubmitDecision = async (taskResponseOverride?: any) => {
+    if (!simulation) return
+    
+    const responseToUse = taskResponseOverride || taskResponse
+    
+    // For multiple choice, we need a selected option
+    if (decisionTask && !selectedOptionDetails) return
+    
+    // For essay/short_answer, we need a task response
+    if (primaryTask && (primaryTask.type === 'essay' || primaryTask.type === 'short_answer') && !responseToUse) return
 
     setIsLoading(true)
     try {
@@ -140,6 +171,13 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           userId: user?.id,
           scenario: simulation.scenario,
           option: selectedOptionDetails,
+          task: primaryTask && (primaryTask.type === 'essay' || primaryTask.type === 'short_answer') && responseToUse ? {
+            id: primaryTask.id,
+            type: primaryTask.type,
+            response: responseToUse.value,
+            word_count: responseToUse.word_count,
+            evaluation_criteria: primaryTask.evaluation_criteria,
+          } : undefined,
           context: simulationContext,
           round: currentRound,
         }),
@@ -155,7 +193,16 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
 
       const result = await response.json()
       if (result?.success && result.feedback) {
-        setAiResults(result.feedback as FeedbackPayload)
+        // Ensure ai_feedback is an object, not a string
+        const feedback = result.feedback
+        if (typeof feedback.ai_feedback === 'string') {
+          try {
+            feedback.ai_feedback = JSON.parse(feedback.ai_feedback)
+          } catch (e) {
+            console.error('Failed to parse ai_feedback:', e)
+          }
+        }
+        setAiResults(feedback as FeedbackPayload)
       } else {
         setAiResults(null)
       }
@@ -279,7 +326,8 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           </CardContent>
         </Card>
 
-        {decisionOptions.length > 0 ? (
+        {/* Primary Task - Multiple Choice */}
+        {decisionTask && decisionOptions.length > 0 ? (
           <div className="grid gap-4 mb-6">
             {decisionOptions.map((option) => (
               <Card
@@ -352,10 +400,19 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
               </Card>
             ))}
           </div>
+        ) : primaryTask && (primaryTask.type === 'essay' || primaryTask.type === 'short_answer') ? (
+          /* Primary Task - Essay or Short Answer */
+          <div className="mb-6">
+            <TaskInput
+              task={primaryTask}
+              onSubmit={handleTaskResponse}
+              isLoading={isLoading}
+            />
+          </div>
         ) : (
           <Card className="mb-6 border-dashed border-gray-300">
             <CardContent className="p-6 text-center text-gray-600">
-              <p>No selectable options are available for this round. Review the scenario details and complete the required tasks.</p>
+              <p>No tasks are available for this round. Please contact support if this issue persists.</p>
             </CardContent>
           </Card>
         )}
@@ -408,7 +465,14 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
                 </p>
               </section>
 
-              {aiResults && (
+              {aiResults && aiResults.ai_feedback && typeof aiResults.ai_feedback === 'object' && aiResults.ai_feedback.overall_assessment ? (
+                <DetailedFeedbackComponent
+                  feedback={aiResults.ai_feedback}
+                  performanceScore={aiResults.outcome_score}
+                  skillsGained={aiResults.skills_gained || {}}
+                  onContinue={handleNextRound}
+                />
+              ) : aiResults ? (
                 <section className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className="bg-green-600 text-white">Score: {aiResults.outcome_score}/100</Badge>
@@ -418,43 +482,51 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
                       </Badge>
                     ))}
                   </div>
-
-                  <div>
-                    <h4 className="font-semibold text-green-900 mb-2">Overall Assessment</h4>
-                    <p className="text-green-800 leading-relaxed">{aiResults.ai_feedback.overall_assessment}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {typeof aiResults.ai_feedback === 'string' ? (
                     <div>
-                      <h5 className="font-semibold text-green-900 mb-2">Strengths</h5>
-                      <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
-                        {aiResults.ai_feedback.decision_analysis.strengths.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
+                      <h4 className="font-semibold text-green-900 mb-2">Overall Assessment</h4>
+                      <p className="text-green-800 leading-relaxed whitespace-pre-wrap">{aiResults.ai_feedback}</p>
                     </div>
-                    <div>
-                      <h5 className="font-semibold text-green-900 mb-2">Areas for Improvement</h5>
-                      <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
-                        {aiResults.ai_feedback.decision_analysis.areas_for_improvement.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  {aiResults.ai_feedback.reflection_questions.length > 0 && (
-                    <div>
-                      <h5 className="font-semibold text-green-900 mb-2">Reflection Questions</h5>
-                      <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
-                        {aiResults.ai_feedback.reflection_questions.slice(0, 3).map((question) => (
-                          <li key={question}>{question}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  ) : aiResults.ai_feedback?.overall_assessment ? (
+                    <>
+                      <div>
+                        <h4 className="font-semibold text-green-900 mb-2">Overall Assessment</h4>
+                        <p className="text-green-800 leading-relaxed">{aiResults.ai_feedback.overall_assessment}</p>
+                      </div>
+                      {aiResults.ai_feedback.decision_analysis && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h5 className="font-semibold text-green-900 mb-2">Strengths</h5>
+                            <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
+                              {aiResults.ai_feedback.decision_analysis.strengths?.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h5 className="font-semibold text-green-900 mb-2">Areas for Improvement</h5>
+                            <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
+                              {aiResults.ai_feedback.decision_analysis.areas_for_improvement?.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                      {aiResults.ai_feedback.reflection_questions && aiResults.ai_feedback.reflection_questions.length > 0 && (
+                        <div>
+                          <h5 className="font-semibold text-green-900 mb-2">Reflection Questions</h5>
+                          <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
+                            {aiResults.ai_feedback.reflection_questions.slice(0, 3).map((question, idx) => (
+                              <li key={idx}>{question}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  ) : null}
                 </section>
-              )}
+              ) : null}
 
               <div className="flex items-center justify-between pt-4 border-t border-green-200">
                 <div className="text-sm text-green-700">
@@ -474,7 +546,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           </Card>
         )}
 
-        {!showResults && (
+        {!showResults && primaryTask && decisionTask && (
           <div className="flex justify-center">
             <Button
               onClick={handleSubmitDecision}

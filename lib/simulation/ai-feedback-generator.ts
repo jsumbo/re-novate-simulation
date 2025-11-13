@@ -31,21 +31,29 @@ export async function generateDetailedFeedback(
             { role: 'user', content: prompt },
           ],
           temperature: 0.8,
-          max_tokens: 800,
+          max_tokens: 2000,
         }),
       })
 
       if (resp.ok) {
         const data = await resp.json()
-        const text = data.choices?.[0]?.message?.content || ''
+        let text = data.choices?.[0]?.message?.content || ''
+        
+        // Strip markdown code blocks if present
+        text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim()
+        
         // The model returns a single blob of text. Try to parse JSON if the model returned structured JSON.
         try {
           const parsed = JSON.parse(text)
-          return parsed as DetailedFeedback
+          // Validate that parsed object has required structure
+          if (parsed && typeof parsed === 'object' && parsed.overall_assessment) {
+            return parsed as DetailedFeedback
+          }
+          throw new Error('Invalid structure')
         } catch {
-          // If parsing fails, spread the text into the overall_assessment and use templates for structured fields
+          // If parsing fails, use the text as overall_assessment and use templates for structured fields
           return {
-            overall_assessment: text,
+            overall_assessment: text.length > 0 ? text : generateOverallAssessment(selectedOption, scenario, careerPath),
             decision_analysis: generateDecisionAnalysis(selectedOption, scenario, context),
             skill_development: generateSkillDevelopment(selectedOption, careerPath, userPerformance),
             real_world_examples: generateRealWorldExamples(scenario, selectedOption, careerPath),
@@ -75,7 +83,59 @@ export async function generateDetailedFeedback(
 
 function buildFeedbackPrompt({ scenario, selectedOption, context, userPerformance }: any) {
   // Build a detailed prompt describing the simulation, the chosen option, and the learner context.
-  return `Scenario:\nTitle: ${scenario.title}\nContext: ${scenario.context}\nChallenge: ${scenario.challenge}\n\nSelected Option:\n${selectedOption.text}\nRisk level: ${selectedOption.risk_level}\nImmediate consequences: ${JSON.stringify(selectedOption.immediate_consequences)}\nLong term effects: ${JSON.stringify(selectedOption.long_term_effects)}\n\nLearner Context:\nCareer path: ${context.user_background.career_path}\nSkill level: ${context.user_background.skill_level}\nBusiness stage: ${context.businessStage}\nMarket conditions: ${context.market_conditions}\nResources: ${JSON.stringify(context.resources)}\n\nUser performance summary: ${JSON.stringify(userPerformance)}\n\nProduce a JSON object with the following keys: overall_assessment (string), decision_analysis (object with strengths, areas_for_improvement, alternative_approaches arrays), skill_development (object with skills_demonstrated and skills_to_develop arrays), real_world_examples (array), learning_resources (object), action_items (array), reflection_questions (array). Keep responses concise and actionable.`
+  return `You are an expert business mentor providing feedback on a student's decision in a business simulation.
+
+Scenario:
+Title: ${scenario.title}
+Context: ${scenario.context}
+Challenge: ${scenario.challenge}
+
+Selected Option:
+${selectedOption.text}
+Risk level: ${selectedOption.risk_level}
+Immediate consequences: ${JSON.stringify(selectedOption.immediate_consequences)}
+Long term effects: ${JSON.stringify(selectedOption.long_term_effects)}
+
+Learner Context:
+Career path: ${context.user_background.career_path}
+Skill level: ${context.user_background.skill_level}
+Business stage: ${context.businessStage}
+Market conditions: ${context.market_conditions}
+Resources: ${JSON.stringify(context.resources)}
+
+User performance summary: ${JSON.stringify(userPerformance)}
+
+Provide detailed, personalized feedback. Return ONLY valid JSON (no markdown code blocks, no explanations). The JSON must have this exact structure:
+{
+  "overall_assessment": "A concise 2-3 sentence assessment of the decision",
+  "decision_analysis": {
+    "strengths": ["strength 1", "strength 2", "strength 3"],
+    "areas_for_improvement": ["area 1", "area 2", "area 3"],
+    "alternative_approaches": ["approach 1", "approach 2"]
+  },
+  "skill_development": {
+    "skills_demonstrated": [
+      {"skill": "skill name", "level": "beginner|intermediate|advanced", "evidence": "how they demonstrated it"}
+    ],
+    "skills_to_develop": [
+      {"skill": "skill name", "why_important": "reason", "how_to_improve": "actionable advice"}
+    ]
+  },
+  "real_world_examples": [
+    {"company": "Company name", "situation": "brief situation", "outcome": "what happened", "lesson": "key takeaway"}
+  ],
+  "learning_resources": {
+    "books": [{"title": "Book Title", "author": "Author", "relevance": "why relevant"}],
+    "videos": [{"title": "Video Title", "url": "url", "channel": "Channel", "duration": "duration", "key_topics": ["topic1", "topic2"]}],
+    "courses": [{"title": "Course Title", "provider": "Provider", "url": "url", "level": "beginner|intermediate|advanced", "estimated_time": "time"}]
+  },
+  "action_items": [
+    {"task": "specific task", "priority": "high|medium|low", "timeline": "timeframe", "resources_needed": ["resource1", "resource2"]}
+  ],
+  "reflection_questions": ["question 1", "question 2", "question 3", "question 4"]
+}
+
+Make the feedback specific to this decision and context. Keep it concise and actionable.`
 }
 
 function generateOverallAssessment(

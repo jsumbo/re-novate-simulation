@@ -860,7 +860,10 @@ function generateAIContext(
   context: SimulationContext,
   scenario: SimulationScenario
 ): string {
-  return `As your AI mentor, I'll help you navigate this ${scenario.difficulty_level}/5 difficulty scenario. Your ${context.user_background.career_path} expertise and previous decisions will influence the outcomes. I'll provide personalized feedback based on your choice.`;
+  const difficultyText = scenario.difficulty_level >= 4 ? 'challenging' : scenario.difficulty_level >= 3 ? 'moderate' : 'straightforward';
+  const careerPath = context.user_background.career_path || 'entrepreneur';
+  
+  return `This ${difficultyText} scenario tests your ${careerPath} skills. Consider all stakeholders and long-term impacts when deciding.`;
 }
 
 function generateLearningObjectives(

@@ -30,35 +30,17 @@ interface TaskInputProps {
 export function TaskInput({ task, onSubmit, isLoading = false, className }: TaskInputProps) {
   const [selectedOption, setSelectedOption] = React.useState<string | null>(null)
   const [textResponse, setTextResponse] = React.useState("")
-  const [wordCount, setWordCount] = React.useState(0)
   const [isValid, setIsValid] = React.useState(false)
 
-  // Update word count and validation for text inputs
+  // Update validation for text inputs
   React.useEffect(() => {
     if (task.type === 'essay' || task.type === 'short_answer') {
-      const words = textResponse.trim().split(/\s+/).filter(word => word.length > 0)
-      setWordCount(words.length)
+      // Only check for minimum content (non-empty response)
+      const hasContent = textResponse.trim().length > 0
+      const maxLength = task.constraints?.max_length || 10000
+      const withinLengthLimit = textResponse.length <= maxLength
       
-      // Enforce 100 words minimum for all text inputs
-      const minWords = 100 // Always require 100 words minimum
-      const maxWords = task.constraints?.word_limit || 1000
-      const minLength = task.constraints?.min_length || 500 // Reasonable minimum for 100 words
-      
-      const hasMinimumContent = textResponse.trim().length >= minLength
-      const withinWordLimits = words.length >= minWords && words.length <= maxWords
-      
-      setIsValid(hasMinimumContent && withinWordLimits)
-      
-      console.log('Validation check:', {
-        textLength: textResponse.length,
-        wordCount: words.length,
-        minWords,
-        maxWords,
-        minLength,
-        hasMinimumContent,
-        withinWordLimits,
-        isValid: hasMinimumContent && withinWordLimits
-      })
+      setIsValid(hasContent && withinLengthLimit)
     } else if (task.type === 'multiple_choice') {
       setIsValid(selectedOption !== null)
     }
@@ -71,6 +53,7 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
     if (task.type === 'multiple_choice') {
       response = { type: 'option', value: selectedOption }
     } else {
+      const wordCount = textResponse.trim().split(/\s+/).filter(word => word.length > 0).length
       response = { type: 'text', value: textResponse, word_count: wordCount }
     }
 
@@ -136,13 +119,13 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
                 </div>
               </div>
             </div>
-            {(task.type === 'essay' || task.type === 'short_answer') && getWordLimitInfo() && (
+            {(task.type === 'essay' || task.type === 'short_answer') && task.constraints?.max_length && (
               <div className="text-right">
                 <div className="text-sm text-blue-700 font-medium">
-                  {wordCount} / {getWordLimitInfo()?.max} words
+                  {textResponse.length} / {task.constraints.max_length} characters
                 </div>
                 <Progress 
-                  value={(wordCount / (getWordLimitInfo()?.max || 1)) * 100} 
+                  value={(textResponse.length / task.constraints.max_length) * 100} 
                   className="w-24 h-2 mt-1"
                 />
               </div>
@@ -271,9 +254,9 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
               <label className="text-sm font-medium text-gray-700">
                 Your Response
               </label>
-              {getWordLimitInfo() && (
+              {task.constraints?.max_length && (
                 <div className="text-sm text-gray-500">
-                  Recommended: {getWordLimitInfo()?.min}-{getWordLimitInfo()?.max} words
+                  Maximum: {task.constraints.max_length} characters
                 </div>
               )}
             </div>
@@ -281,12 +264,10 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
               value={textResponse}
               onChange={(e) => {
                 const newValue = e.target.value
-                const words = newValue.trim().split(/\s+/).filter(word => word.length > 0)
-                const maxWords = task.constraints?.word_limit || 1000
                 const maxLength = task.constraints?.max_length || 10000
                 
-                // Enforce character limit
-                if (newValue.length <= maxLength && words.length <= maxWords) {
+                // Only enforce character limit
+                if (newValue.length <= maxLength) {
                   setTextResponse(newValue)
                 }
               }}
@@ -302,15 +283,9 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
               maxLength={task.constraints?.max_length || 10000}
             />
             
-            {/* Word count and validation feedback */}
+            {/* Character count and validation feedback */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-4">
-                <span className={cn(
-                  "font-medium",
-                  isValid ? "text-green-600" : "text-gray-500"
-                )}>
-                  {wordCount} words
-                </span>
                 {task.constraints?.max_length && (
                   <span className={cn(
                     "text-xs",
@@ -321,27 +296,15 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
                     {textResponse.length}/{task.constraints.max_length} characters
                   </span>
                 )}
-                {task.constraints?.min_length && (
-                  <span className={cn(
-                    "text-xs",
-                    textResponse.length >= task.constraints.min_length 
-                      ? "text-green-600" 
-                      : "text-gray-500"
-                  )}>
-                    Min: {task.constraints.min_length} chars
-                  </span>
-                )}
               </div>
               
               {!isValid && textResponse.length > 0 && (
                 <div className="flex items-center gap-1 text-amber-600">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-xs">
-                    {getWordLimitInfo() && wordCount < getWordLimitInfo()!.min 
-                      ? `Need ${getWordLimitInfo()!.min - wordCount} more words`
-                      : wordCount > (getWordLimitInfo()?.max || 1000)
-                      ? `${wordCount - (getWordLimitInfo()?.max || 1000)} words over limit`
-                      : "Response too short"
+                    {textResponse.length > (task.constraints?.max_length || 10000)
+                      ? "Response exceeds maximum length"
+                      : "Please enter a response"
                     }
                   </span>
                 </div>
@@ -369,11 +332,6 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
         </Button>
       </div>
       
-      {/* Debug info (remove in production) */}
-      <div className="text-xs text-gray-500 mt-2 text-center">
-        Valid: {isValid ? 'Yes' : 'No'} | Loading: {isLoading ? 'Yes' : 'No'}
-      </div>
-
       {/* Validation Alert */}
       {!isValid && (selectedOption !== null || textResponse.length > 0) && (
         <Alert>
@@ -381,11 +339,9 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
           <AlertDescription>
             {task.type === 'multiple_choice' 
               ? "Please select an option to continue."
-              : `Please ensure your response meets the requirements: ${
-                  getWordLimitInfo() 
-                    ? `${getWordLimitInfo()?.min}-${getWordLimitInfo()?.max} words`
-                    : `minimum ${task.constraints?.min_length || 50} characters`
-                }.`
+              : task.constraints?.max_length
+              ? `Please enter a response (maximum ${task.constraints.max_length} characters).`
+              : "Please enter a response."
             }
           </AlertDescription>
         </Alert>
