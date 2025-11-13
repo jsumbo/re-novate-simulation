@@ -142,12 +142,12 @@ export async function POST(request: NextRequest) {
     let simulation = await generateSimulation(context, userHistory)
 
     const usedTitles = new Set([
-      ...excludeScenarioTitles,
-      ...userHistory.map((history) => history.scenarioType),
+      ...excludeScenarioTitles.map((t: string) => t.toLowerCase()),
+      ...userHistory.map((history) => history.scenarioType?.toLowerCase()).filter(Boolean),
     ])
 
     let attempts = 0
-    while (usedTitles.has(simulation.scenario.title) && attempts < 3) {
+    while (usedTitles.has(simulation.scenario.title.toLowerCase()) && attempts < 5) {
       simulation = await generateSimulation(context, userHistory)
       attempts += 1
     }

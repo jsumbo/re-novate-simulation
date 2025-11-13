@@ -27,11 +27,11 @@ export async function generateDetailedFeedback(
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are an expert instructional designer and business mentor. Provide clear, concise, and actionable feedback tailored to the simulation context.' },
+            { role: 'system', content: 'You are an expert instructional designer and business mentor with vast knowledge of business resources, real-world examples, and educational content. Provide clear, concise, and actionable feedback tailored to the simulation context. Always generate unique, diverse learning resources - never repeat the same resources. Use your knowledge to find varied, relevant resources from different sources.' },
             { role: 'user', content: prompt },
           ],
-          temperature: 0.8,
-          max_tokens: 2000,
+          temperature: 0.9,
+          max_tokens: 2500,
         }),
       })
 
@@ -47,6 +47,10 @@ export async function generateDetailedFeedback(
           const parsed = JSON.parse(text)
           // Validate that parsed object has required structure
           if (parsed && typeof parsed === 'object' && parsed.overall_assessment) {
+            // Validate and fix learning resources URLs if needed
+            if (parsed.learning_resources) {
+              parsed.learning_resources = validateLearningResources(parsed.learning_resources)
+            }
             return parsed as DetailedFeedback
           }
           throw new Error('Invalid structure')
@@ -79,6 +83,77 @@ export async function generateDetailedFeedback(
     action_items: generateActionItems(selectedOption, scenario, careerPath),
     reflection_questions: generateReflectionQuestions(scenario, selectedOption, careerPath),
   }
+}
+
+function validateLearningResources(resources: any) {
+  // Validate URLs and replace invalid ones with real resources
+  const realVideoUrls = [
+    "https://www.youtube.com/watch?v=CBYhVcO4WgI", // YC: How to Start a Startup - Lecture 1
+    "https://www.youtube.com/watch?v=bNpx7gpSqbY", // TED: Why Startups Succeed
+    "https://www.youtube.com/watch?v=ii1jcLg-eIQ", // YC: Paul Graham on Startup Ideas
+    "https://www.youtube.com/watch?v=u0hYIRQRiws", // YC: How to Hire
+    "https://www.youtube.com/watch?v=z5W5l0q3q8E", // YC: Growth
+    "https://www.youtube.com/watch?v=0lJKucu6HJc", // YC: Building Product
+    "https://www.youtube.com/watch?v=H6w7Y1-mLpE", // YC: How to Raise Money
+  ]
+  
+  const realArticleUrls = [
+    "http://paulgraham.com/ds.html", // Do Things that Don't Scale
+    "http://paulgraham.com/start.html", // How to Start a Startup
+    "http://paulgraham.com/startupideas.html", // How to Get Startup Ideas
+    "http://paulgraham.com/wealth.html", // How to Make Wealth
+    "http://paulgraham.com/relres.html", // Relentlessly Resourceful
+    "https://a16z.com/2014/05/09/the-hard-thing-about-hard-things/",
+    "https://hbr.org/2016/04/blitzscaling",
+    "https://firstround.com/review/what-makes-a-great-cto/",
+    "https://www.ycombinator.com/library",
+  ]
+  
+  const realCourseUrls = [
+    "https://www.coursera.org/specializations/wharton-entrepreneurship",
+    "https://www.edx.org/course/strategic-leadership",
+    "https://www.coursera.org/specializations/digital-marketing",
+    "https://www.khanacademy.org/economics-finance-domain/core-finance",
+  ]
+  
+  if (resources.videos) {
+    resources.videos = resources.videos.map((video: any, idx: number) => {
+      if (!video.url || 
+          video.url.includes('example.com') || 
+          video.url.includes('REAL_') || 
+          !video.url.startsWith('http') ||
+          (!video.url.includes('youtube.com') && !video.url.includes('youtu.be'))) {
+        video.url = realVideoUrls[idx % realVideoUrls.length]
+      }
+      return video
+    })
+  }
+  
+  if (resources.articles) {
+    resources.articles = resources.articles.map((article: any, idx: number) => {
+      if (!article.url || 
+          article.url.includes('example.com') || 
+          article.url.includes('REAL_') || 
+          !article.url.startsWith('http')) {
+        article.url = realArticleUrls[idx % realArticleUrls.length]
+      }
+      return article
+    })
+  }
+  
+  if (resources.courses) {
+    resources.courses = resources.courses.map((course: any, idx: number) => {
+      if (!course.url || 
+          course.url.includes('example.com') || 
+          course.url.includes('REAL_') || 
+          !course.url.startsWith('http')) {
+        course.url = realCourseUrls[idx % realCourseUrls.length]
+      }
+      return course
+    })
+  }
+  
+  return resources
 }
 
 function buildFeedbackPrompt({ scenario, selectedOption, context, userPerformance }: any) {
@@ -126,8 +201,9 @@ Provide detailed, personalized feedback. Return ONLY valid JSON (no markdown cod
   ],
   "learning_resources": {
     "books": [{"title": "Book Title", "author": "Author", "relevance": "why relevant"}],
-    "videos": [{"title": "Video Title", "url": "url", "channel": "Channel", "duration": "duration", "key_topics": ["topic1", "topic2"]}],
-    "courses": [{"title": "Course Title", "provider": "Provider", "url": "url", "level": "beginner|intermediate|advanced", "estimated_time": "time"}]
+    "videos": [{"title": "Video Title", "url": "REAL_YOUTUBE_URL", "channel": "Channel", "duration": "duration", "key_topics": ["topic1", "topic2"]}],
+    "courses": [{"title": "Course Title", "provider": "Provider", "url": "REAL_COURSE_URL", "level": "beginner|intermediate|advanced", "estimated_time": "time"}],
+    "articles": [{"title": "Article Title", "url": "REAL_ARTICLE_URL", "source": "Source", "summary": "summary"}]
   },
   "action_items": [
     {"task": "specific task", "priority": "high|medium|low", "timeline": "timeframe", "resources_needed": ["resource1", "resource2"]}
@@ -135,7 +211,36 @@ Provide detailed, personalized feedback. Return ONLY valid JSON (no markdown cod
   "reflection_questions": ["question 1", "question 2", "question 3", "question 4"]
 }
 
-Make the feedback specific to this decision and context. Keep it concise and actionable.`
+CRITICAL: For learning_resources, you MUST provide REAL, WORKING URLs that actually exist. 
+
+UNIQUENESS REQUIREMENT: Generate DIFFERENT resources each time. Use your vast knowledge to find diverse, relevant resources. Do NOT repeat the same resources. Vary:
+- Different YouTube channels (YC, TED, Stanford, MIT, First Round Review, a16z, etc.)
+- Different Paul Graham essays (he has many: ds.html, start.html, startupideas.html, schlep.html, maker.html, wealth.html, etc.)
+- Different business blogs (HBR, First Round, a16z, YC Blog, TechCrunch, etc.)
+- Different courses from various providers (Coursera, edX, Udemy, Khan Academy, etc.)
+- Different books relevant to the specific scenario
+
+Examples of valid sources (use these as inspiration, but find DIFFERENT ones):
+
+Videos (must be real YouTube URLs):
+- Y Combinator: https://www.youtube.com/watch?v=CBYhVcO4WgI (How to Start a Startup)
+- Y Combinator: https://www.youtube.com/watch?v=u0hYIRQRiws (How to Hire)
+- Y Combinator: https://www.youtube.com/watch?v=z5W5l0q3q8E (Growth)
+- TED: https://www.youtube.com/watch?v=bNpx7gpSqbY (Why Startups Succeed)
+
+Articles (must be real URLs):
+- Paul Graham: http://paulgraham.com/ds.html (Do Things that Don't Scale)
+- Paul Graham: http://paulgraham.com/start.html (How to Start a Startup)
+- Paul Graham: http://paulgraham.com/startupideas.html (How to Get Startup Ideas)
+- a16z: https://a16z.com/2014/05/09/the-hard-thing-about-hard-things/
+- HBR: https://hbr.org/2016/04/blitzscaling
+- First Round: https://firstround.com/review/what-makes-a-great-cto/
+
+Courses (must be real URLs):
+- Coursera: https://www.coursera.org/specializations/wharton-entrepreneurship
+- edX: https://www.edx.org/course/strategic-leadership
+
+Use your knowledge to find resources that are SPECIFICALLY relevant to this scenario and decision. Make them unique and diverse. DO NOT use placeholder URLs, example.com, fake links, or URLs that don't exist. All URLs must be real, working links that users can actually visit.`
 }
 
 function generateOverallAssessment(
@@ -344,6 +449,12 @@ function generateLearningResources(
     ],
     articles: [
       {
+        title: "Do Things that Don't Scale",
+        url: "http://paulgraham.com/ds.html",
+        source: "Paul Graham",
+        summary: "Why startups should focus on manual, unscalable tasks initially"
+      },
+      {
         title: "The Hard Thing About Hard Things",
         url: "https://a16z.com/2014/05/09/the-hard-thing-about-hard-things/",
         source: "Andreessen Horowitz",
@@ -358,11 +469,11 @@ function generateLearningResources(
     ],
     videos: [
       {
-        title: "How to Build Your Startup",
-        url: "https://www.youtube.com/watch?v=CVfnkM44Urs",
-        channel: "Stanford eCorner",
-        duration: "45 minutes",
-        key_topics: ["Product-Market Fit", "Team Building", "Fundraising"]
+        title: "How to Start a Startup - Lecture 1",
+        url: "https://www.youtube.com/watch?v=CBYhVcO4WgI",
+        channel: "Y Combinator",
+        duration: "60 minutes",
+        key_topics: ["Starting a Startup", "Ideas", "Team Building"]
       },
       {
         title: "The Single Biggest Reason Why Startups Succeed",
@@ -370,6 +481,13 @@ function generateLearningResources(
         channel: "TED",
         duration: "6 minutes",
         key_topics: ["Timing", "Market Analysis", "Execution"]
+      },
+      {
+        title: "Paul Graham: How to Get Startup Ideas",
+        url: "https://www.youtube.com/watch?v=ii1jcLg-eIQ",
+        channel: "Y Combinator",
+        duration: "40 minutes",
+        key_topics: ["Ideas", "Problem Solving", "Market Needs"]
       }
     ],
     courses: [
@@ -417,11 +535,11 @@ function getCareerSpecificResources(careerPath: string) {
         summary: "Key competencies and responsibilities of technical leaders"
       }],
       videos: [{
-        title: "Building Technical Teams",
-        url: "https://www.youtube.com/watch?v=technical-teams",
-        channel: "Tech Leadership",
-        duration: "30 minutes",
-        key_topics: ["Hiring", "Team Culture", "Technical Vision"]
+        title: "How to Hire",
+        url: "https://www.youtube.com/watch?v=u0hYIRQRiws",
+        channel: "Y Combinator",
+        duration: "50 minutes",
+        key_topics: ["Hiring", "Team Building", "Company Culture"]
       }],
       courses: [{
         title: "Technical Leadership",
@@ -445,11 +563,11 @@ function getCareerSpecificResources(careerPath: string) {
         summary: "How technology is changing marketing strategies"
       }],
       videos: [{
-        title: "Digital Marketing Strategy",
-        url: "https://www.youtube.com/watch?v=digital-marketing",
-        channel: "Marketing School",
-        duration: "25 minutes",
-        key_topics: ["SEO", "Content Marketing", "Social Media"]
+        title: "Growth: How to Get Users and Grow",
+        url: "https://www.youtube.com/watch?v=z5W5l0q3q8E",
+        channel: "Y Combinator",
+        duration: "50 minutes",
+        key_topics: ["Growth", "User Acquisition", "Marketing"]
       }],
       courses: [{
         title: "Digital Marketing Specialization",

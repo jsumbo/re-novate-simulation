@@ -267,13 +267,27 @@ export async function generateSimulation(
   const usedScenarios = userHistory?.map((h) => h.scenarioType?.toLowerCase()) || [];
   const userPerformance = await calculateUserPerformance(userHistory);
 
-  let scenario = await tryGenerateScenarioWithAI(
-    context,
-    usedScenarios,
-    userPerformance
-  );
+  let scenario = null;
+  let attempts = 0;
+  const maxAttempts = 5;
+
+  while (!scenario && attempts < maxAttempts) {
+    scenario = await tryGenerateScenarioWithAI(
+      context,
+      usedScenarios,
+      userPerformance,
+      attempts
+    );
+    attempts++;
+    
+    if (scenario && usedScenarios.includes(scenario.title.toLowerCase())) {
+      scenario = null;
+      continue;
+    }
+  }
 
   if (!scenario) {
+    console.warn('AI generation failed after retries, using template fallback');
     scenario = await generateScenarioFromTemplate(
       context,
       usedScenarios,
@@ -312,7 +326,8 @@ async function tryGenerateScenarioWithAI(
     averageScore: number
     strongSkills: string[]
     weakSkills: string[]
-  }
+  },
+  attemptNumber: number = 0
 ): Promise<SimulationScenario | null> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -321,12 +336,21 @@ async function tryGenerateScenarioWithAI(
 
   try {
     const client = new OpenAI({ apiKey })
-    const uniqueHint =
-      usedScenarios.length > 0
-        ? `Avoid reusing these previous scenario themes or titles: ${usedScenarios
-            .slice(0, 6)
-            .join(', ')}`
-        : 'Make the scenario distinct and memorable.'
+    
+    const uniquenessRequirement = usedScenarios.length > 0
+      ? `CRITICAL UNIQUENESS REQUIREMENT: You MUST create a completely unique scenario that is DIFFERENT from these previous scenarios: ${usedScenarios
+          .slice(0, 10)
+          .join(', ')}. 
+          
+Do NOT reuse:
+- Similar titles or themes
+- Similar contexts or situations
+- Similar challenges or problems
+- Similar stakeholder groups
+- Similar constraints
+
+Create something FRESH and UNIQUE. Think of a different industry angle, different problem type, different business challenge. Be creative and diverse.`
+      : 'Create a unique, memorable scenario that stands out.'
 
     const performanceSummary = userPerformance
       ? `The learner previously scored around ${Math.round(
@@ -336,17 +360,19 @@ async function tryGenerateScenarioWithAI(
         }.`
       : 'No prior performance data is available.'
 
-    const prompt = `Design a single entrepreneurship simulation scenario tailored for a Liberian secondary student.
+    const prompt = `Design a COMPLETELY UNIQUE entrepreneurship simulation scenario tailored for a Liberian secondary student.
+
+${uniquenessRequirement}
 
 Return ONLY valid JSON with this shape:
 {
-  "title": string,
-  "context": string,
-  "situation": string,
-  "challenge": string,
-  "stakeholders": string[],
-  "constraints": string[],
-  "success_metrics": string[],
+  "title": string (must be unique and specific, not generic),
+  "context": string (detailed, specific situation),
+  "situation": string (elaborate on the context with specific details),
+  "challenge": string (clear, specific challenge),
+  "stakeholders": string[] (4-6 specific stakeholders),
+  "constraints": string[] (4-6 specific constraints),
+  "success_metrics": string[] (4-6 measurable metrics),
   "estimated_time": number (minutes between 10 and 25),
   "difficulty_level": number (1-5)
 }
@@ -360,19 +386,23 @@ Make it specific to the following context:
 - Learner career path: ${context.user_background.career_path}
 - Learner skill level (0-100): ${context.user_background.skill_level}
 - ${performanceSummary}
-- ${uniqueHint}
 
-Ensure stakeholders, constraints, and success metrics contain 4-6 concise items each.`
+IMPORTANT: 
+- Use your vast knowledge to create a scenario that is realistic, relevant to West African context, and educational
+- Make the title specific and memorable (e.g., "The Monrovia Market Expansion Dilemma" not "Business Challenge")
+- Include specific details about the Liberian/West African business environment
+- Ensure stakeholders, constraints, and success metrics are specific to this scenario, not generic
+- This is attempt ${attemptNumber + 1} - if this is a retry, make it even more unique than before`
 
     const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
-      temperature: 0.7,
+      temperature: Math.min(0.9 + (attemptNumber * 0.1), 1.5),
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
           content:
-            'You are an expert instructional designer creating entrepreneurship simulations for West African secondary students. Always return clean JSON without commentary.',
+            'You are an expert instructional designer creating entrepreneurship simulations for West African secondary students. You have vast knowledge of business scenarios, real-world examples, and educational content. Always create unique, diverse scenarios. Always return clean JSON without commentary.',
         },
         {
           role: 'user',
@@ -588,71 +618,166 @@ function generateComplexTasks(
     });
   }
 
-  // Task 2: Budget Allocation
-  tasks.push({
-    id: "budget_allocation",
-    type: "budget_allocation",
-    title: "Emergency Budget Reallocation",
-    description: `You have $${context.resources.budget.toLocaleString()} remaining. Allocate funds across critical areas to maximize survival and growth potential.`,
-    required: true,
-    constraints: {
-      budget_limit: context.resources.budget,
-    },
-  });
-
-  // Task 3: Action Plan (Text Input)
-  tasks.push({
-    id: "action_plan",
-    type: "short_answer",
-    title: "90-Day Action Plan",
-    description:
-      "Write a detailed 90-day action plan explaining how you will execute your strategy. Include specific milestones, timelines, and success metrics.",
-    required: true,
-    constraints: {
-      max_length: 1000,
-    },
-  });
-
-  // Task 4: Stakeholder Communication (Text Input)
-  tasks.push({
-    id: "stakeholder_communication",
-    type: "short_answer",
-    title: "Stakeholder Communication Strategy",
-    description:
-      "Draft key messages for different stakeholder groups. How will you communicate this crisis and your response plan?",
-    required: true,
-    constraints: {
-      max_length: 800,
-    },
-  });
-
-  // Task 5: Priority Ranking
-  tasks.push({
-    id: "priority_ranking",
-    type: "priority_ranking",
-    title: "Crisis Response Priorities",
-    description:
-      "Rank these crisis response activities in order of priority (1 = highest priority).",
-    required: true,
-    constraints: {
-      max_items: 8,
-    },
-  });
-
-  // Task 6: Risk Assessment Document (File Upload - Optional)
-  tasks.push({
-    id: "risk_assessment",
-    type: "file_upload",
-    title: "Risk Assessment Document",
-    description:
-      "Upload a detailed risk assessment document analyzing potential outcomes of your strategy (optional but recommended).",
-    required: false,
-    constraints: {
-      file_types: ["pdf", "doc", "docx", "txt"],
-    },
-  });
+  // Generate scenario-specific additional tasks
+  const additionalTasks = generateScenarioSpecificTasks(scenario, context)
+  tasks.push(...additionalTasks)
 
   return tasks;
+}
+
+function generateScenarioSpecificTasks(
+  scenario: SimulationScenario,
+  context: SimulationContext
+): SimulationTask[] {
+  const tasks: SimulationTask[] = []
+  const scenarioTitle = scenario.title.toLowerCase()
+  const challenge = scenario.challenge.toLowerCase()
+  const stakeholders = scenario.stakeholders
+  const constraints = scenario.constraints
+  
+  // Select 2-3 additional tasks based on scenario characteristics
+  const taskOptions: Array<() => SimulationTask> = []
+  
+  // Budget-related task (if budget is mentioned or relevant)
+  if (scenarioTitle.includes('budget') || challenge.includes('budget') || constraints.some(c => c.toLowerCase().includes('budget'))) {
+    taskOptions.push(() => ({
+      id: `budget_${scenario.id}`,
+      type: "budget_allocation" as const,
+      title: `Budget Allocation for ${scenario.title}`,
+      description: `Given your budget of $${context.resources.budget.toLocaleString()}, allocate funds strategically across: ${constraints.filter(c => c.toLowerCase().includes('budget') || c.toLowerCase().includes('cost')).join(', ') || 'key operational areas'}. Consider the ${scenario.challenge}.`,
+      required: true,
+      constraints: {
+        budget_limit: context.resources.budget,
+      },
+    }))
+  }
+  
+  // Stakeholder communication task (if multiple stakeholders)
+  if (stakeholders.length >= 2) {
+    taskOptions.push(() => ({
+      id: `stakeholder_${scenario.id}`,
+      type: "short_answer" as const,
+      title: `Communication Plan for ${stakeholders.slice(0, 2).join(' and ')}`,
+      description: `Draft a communication strategy for ${stakeholders.join(', ')} regarding ${scenario.challenge}. Address their specific concerns and expectations.`,
+      required: true,
+      constraints: {
+        max_length: 800,
+      },
+    }))
+  }
+  
+  // Timeline/action plan task (if time constraint mentioned)
+  if (challenge.includes('time') || challenge.includes('deadline') || context.resources.time_constraint) {
+    taskOptions.push(() => ({
+      id: `timeline_${scenario.id}`,
+      type: "short_answer" as const,
+      title: `Implementation Timeline`,
+      description: `Create a detailed action plan for addressing ${scenario.challenge}. Your timeline: ${context.resources.time_constraint}. Include milestones and key decision points.`,
+      required: true,
+      constraints: {
+        max_length: 1000,
+      },
+    }))
+  }
+  
+  // Priority ranking task (if multiple constraints or complex situation)
+  if (constraints.length >= 3 || challenge.includes('multiple') || challenge.includes('competing')) {
+    taskOptions.push(() => ({
+      id: `priorities_${scenario.id}`,
+      type: "priority_ranking" as const,
+      title: `Priority Ranking: ${scenario.title}`,
+      description: `Rank these response activities in order of priority for addressing ${scenario.challenge}: ${constraints.slice(0, 5).join(', ')}.`,
+      required: true,
+      constraints: {
+        max_items: Math.min(constraints.length, 8),
+      },
+    }))
+  }
+  
+  // Risk assessment task (if high-risk scenario)
+  if (scenario.difficulty_level >= 4 || challenge.includes('risk') || challenge.includes('crisis')) {
+    taskOptions.push(() => ({
+      id: `risk_${scenario.id}`,
+      type: "short_answer" as const,
+      title: `Risk Assessment`,
+      description: `Identify potential risks in addressing ${scenario.challenge} and develop mitigation strategies. Consider: ${constraints.slice(0, 3).join(', ')}.`,
+      required: true,
+      constraints: {
+        max_length: 600,
+      },
+    }))
+  }
+  
+  // Market analysis task (if market conditions are relevant)
+  if (context.market_conditions && (challenge.includes('market') || challenge.includes('competition') || challenge.includes('customer'))) {
+    taskOptions.push(() => ({
+      id: `market_${scenario.id}`,
+      type: "short_answer" as const,
+      title: `Market Analysis`,
+      description: `Analyze the market conditions (${context.market_conditions}) and how they impact your approach to ${scenario.challenge}.`,
+      required: true,
+      constraints: {
+        max_length: 700,
+      },
+    }))
+  }
+  
+  // Resource optimization task (if resources are constrained)
+  if (constraints.some(c => c.toLowerCase().includes('resource') || c.toLowerCase().includes('limited'))) {
+    taskOptions.push(() => ({
+      id: `resources_${scenario.id}`,
+      type: "short_answer" as const,
+      title: `Resource Optimization`,
+      description: `With limited resources (budget: $${context.resources.budget.toLocaleString()}, team: ${context.resources.team_size}), how will you optimize your approach to ${scenario.challenge}?`,
+      required: true,
+      constraints: {
+        max_length: 600,
+      },
+    }))
+  }
+  
+  // Success metrics task (if success metrics are defined)
+  if (scenario.success_metrics && scenario.success_metrics.length > 0) {
+    taskOptions.push(() => ({
+      id: `metrics_${scenario.id}`,
+      type: "short_answer" as const,
+      title: `Success Metrics & KPIs`,
+      description: `Define how you'll measure success for ${scenario.title}. Consider: ${scenario.success_metrics.slice(0, 3).join(', ')}.`,
+      required: true,
+      constraints: {
+        max_length: 500,
+      },
+    }))
+  }
+  
+  // Select 2-3 tasks randomly from available options
+  const selectedTasks = taskOptions.length > 0 
+    ? taskOptions.sort(() => Math.random() - 0.5).slice(0, Math.min(3, taskOptions.length))
+    : [
+        // Fallback to generic tasks if no scenario-specific ones match
+        () => ({
+          id: `budget_${scenario.id}`,
+          type: "budget_allocation" as const,
+          title: "Budget Allocation",
+          description: `Allocate your $${context.resources.budget.toLocaleString()} budget across key areas to address ${scenario.challenge}.`,
+          required: true,
+          constraints: {
+            budget_limit: context.resources.budget,
+          },
+        }),
+        () => ({
+          id: `action_${scenario.id}`,
+          type: "short_answer" as const,
+          title: "Action Plan",
+          description: `Create an action plan for ${scenario.title}. Include specific steps and timelines.`,
+          required: true,
+          constraints: {
+            max_length: 800,
+          },
+        }),
+      ]
+  
+  return selectedTasks.map(taskFn => taskFn())
 }
 
 function generateOptions(

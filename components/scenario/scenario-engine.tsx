@@ -11,6 +11,7 @@ import { Loader2, Lightbulb, TrendingUp, CheckCircle2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DetailedFeedbackComponent } from "../simulation/detailed-feedback"
 import { TaskInput } from "../simulation/task-input"
+import { StudentLayout } from "@/components/student/student-layout"
 
 interface ScenarioEngineProps {
   user: any
@@ -178,9 +179,10 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
 
   if (!session) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto">
-          <Card className="border-emerald-200 shadow-lg">
+      <StudentLayout user={user}>
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-2xl mx-auto">
+            <Card className="border-emerald-200 shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl text-emerald-900">Ready to Start?</CardTitle>
               <CardDescription className="text-lg">
@@ -216,23 +218,27 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
               </Button>
             </CardContent>
           </Card>
+          </div>
         </div>
-      </div>
+      </StudentLayout>
     )
   }
 
   if (isLoading && !scenario) {
     return (
-      <div className="container mx-auto px-4 py-16 flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
-      </div>
+      <StudentLayout user={user}>
+        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
+        </div>
+      </StudentLayout>
     )
   }
 
   if (showFeedback && feedback) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 max-w-4xl mx-auto">
+      <StudentLayout user={user}>
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-6 max-w-4xl mx-auto">
           <Progress value={(session.current_round / session.total_rounds) * 100} className="h-2" />
           <p className="text-sm text-gray-600 mt-2 text-center">
             Round {session.current_round} of {session.total_rounds}
@@ -298,23 +304,27 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
             </Card>
           </div>
         )}
-      </div>
+        </div>
+      </StudentLayout>
     )
   }
 
   if (!scenario) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <Alert>
-          <AlertDescription>No scenario available. Please try again.</AlertDescription>
-        </Alert>
-      </div>
+      <StudentLayout user={user}>
+        <div className="container mx-auto px-4 py-16">
+          <Alert>
+            <AlertDescription>No scenario available. Please try again.</AlertDescription>
+          </Alert>
+        </div>
+      </StudentLayout>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
+    <StudentLayout user={user}>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-3xl mx-auto">
         <div className="mb-6">
           <Progress value={(session.current_round / session.total_rounds) * 100} className="h-2" />
           <p className="text-sm text-gray-600 mt-2 text-center">
@@ -392,7 +402,8 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
             </Button>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </StudentLayout>
   )
 }

@@ -10,6 +10,7 @@ import Link from "next/link"
 import type { DetailedFeedback, SimulationContext, SimulationOption, SimulationResponse, SimulationTask } from "@/lib/simulation/types"
 import { DetailedFeedbackComponent } from "@/components/simulation/detailed-feedback"
 import { TaskInput } from "@/components/simulation/task-input"
+import { StudentLayout } from "@/components/student/student-layout"
 
 interface EnhancedSimulationEngineProps {
   user: {
@@ -250,8 +251,9 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <StudentLayout user={user}>
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Link href="/student/dashboard">
             <Button variant="outline" size="sm">
@@ -565,7 +567,8 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
             </Button>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </StudentLayout>
   )
 }
