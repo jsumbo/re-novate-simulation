@@ -292,8 +292,8 @@ export function TaskInput({ task, onSubmit, isLoading = false, className }: Task
               }}
               placeholder={
                 task.type === 'essay' 
-                  ? "Write your comprehensive analysis and strategic response here..."
-                  : "Provide your answer here..."
+                  ? "Enter your response..."
+                  : "Enter your answer..."
               }
               className={cn(
                 "min-h-[200px] resize-y",

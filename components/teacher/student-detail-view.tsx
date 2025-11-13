@@ -136,7 +136,6 @@ export function StudentDetailView({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-sm text-gray-600">Decisions</p>
                 <p className="text-xl font-bold">{totalDecisions}</p>

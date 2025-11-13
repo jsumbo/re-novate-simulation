@@ -90,8 +90,6 @@ export function GoalsSelector({ interestArea, onGoalsSelect }: GoalsSelectorProp
     <Card className="border-gray-200">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg text-black flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          Set Your Learning Goals! 🎯
         </CardTitle>
         <p className="text-sm text-gray-600">
           Choose up to 3 goals you want to achieve. These will guide your learning journey!
@@ -183,7 +181,7 @@ export function GoalsSelector({ interestArea, onGoalsSelect }: GoalsSelectorProp
         {selectedGoals.length === 3 && (
           <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800">
-              🌟 Perfect! You've set 3 amazing goals. Let's make them happen!
+              Perfect! You've set 3 goals. Let's get started.
             </p>
           </div>
         )}

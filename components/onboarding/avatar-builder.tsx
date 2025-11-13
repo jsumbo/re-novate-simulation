@@ -22,7 +22,7 @@ const avatarOptions: Avatar[] = [
   {
     id: 'male-1',
     name: 'The Strategist',
-    image: '👨🏽‍💼',
+    image: '👨🏽',
     gender: 'male',
     description: 'Master of Business'
   },
@@ -142,9 +142,6 @@ export function AvatarBuilder({ onAvatarSelect, selectedAvatar }: AvatarSelector
         </div>
 
         <div className="text-center pt-3 sm:pt-4">
-          <Badge variant="secondary" className="text-xs px-2 py-1 bg-gray-100 text-gray-800">
-            Your avatar represents you in RE-Novate! ⭐
-          </Badge>
         </div>
       </CardContent>
     </Card>

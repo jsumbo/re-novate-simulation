@@ -20,7 +20,6 @@ export function ProfilePage({ user }: ProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false)
 
   const handleSave = async () => {
-    // TODO: Implement save functionality
     setIsEditing(false)
   }
 

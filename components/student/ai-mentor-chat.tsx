@@ -79,7 +79,7 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
         setMessages([{
           id: '1',
           role: 'assistant',
-          content: `Hi ${user.username || user.participant_id}! 👋 I'm Noni, your AI mentor here at RE-Novate. I'm here to help you with your entrepreneurship journey, answer questions about business concepts, provide guidance on your simulations, or just chat about your goals and aspirations. What would you like to talk about today?`,
+          content: `Hi ${user.username || user.participant_id}, I'm Noni, your AI mentor at RE-Novate. I can help with your entrepreneurship journey, answer questions about business concepts, provide guidance on simulations, or discuss your goals. What would you like to talk about?`,
           timestamp: new Date()
         }])
       }
@@ -89,7 +89,7 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
       setMessages([{
         id: '1',
         role: 'assistant',
-        content: `Hi ${user.username || user.participant_id}! 👋 I'm Noni, your AI mentor here at RE-Novate. I'm here to help you with your entrepreneurship journey, answer questions about business concepts, provide guidance on your simulations, or just chat about your goals and aspirations. What would you like to talk about today?`,
+        content: `Hi ${user.username || user.participant_id}, I'm Noni, your AI mentor at RE-Novate. I can help with your entrepreneurship journey, answer questions about business concepts, provide guidance on simulations, or discuss your goals. What would you like to talk about?`,
         timestamp: new Date()
       }])
     } finally {
@@ -235,10 +235,8 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
   }
 
   const handleMicrophoneClick = () => {
-    // Placeholder for future audio recording functionality
     setIsRecording(!isRecording)
-    // TODO: Implement audio recording
-    alert('Audio recording will be available soon! 🎤')
+    alert('Audio recording will be available soon')
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -505,7 +503,7 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
           
           <div className="flex items-center justify-between mt-2">
             <p className="text-xs text-gray-500">
-              💡 Try asking: "How do I improve my leadership skills?" or upload files for feedback
+              Try asking: "How do I improve my leadership skills?" or upload files for feedback
             </p>
             {isUploading && (
               <p className="text-xs text-blue-600">Uploading file...</p>

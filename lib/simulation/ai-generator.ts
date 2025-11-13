@@ -1,5 +1,7 @@
 "use server";
 
+import OpenAI from "openai";
+
 import {
   SimulationContext,
   SimulationScenario,
@@ -9,9 +11,6 @@ import {
   SimulationTask,
 } from "./types";
 import { generateDetailedFeedback } from "./ai-feedback-generator";
-
-// This would integrate with OpenAI or another AI service
-// For now, we'll create a sophisticated template-based system
 
 const SCENARIO_TEMPLATES = {
   startup: [
@@ -265,38 +264,22 @@ export async function generateSimulation(
   context: SimulationContext,
   userHistory?: any[]
 ): Promise<SimulationResponse> {
-  // Analyze user history to avoid repetition and increase difficulty
-  const usedScenarios = userHistory?.map((h) => h.scenarioType) || [];
+  const usedScenarios = userHistory?.map((h) => h.scenarioType?.toLowerCase()) || [];
   const userPerformance = await calculateUserPerformance(userHistory);
 
-  // Select appropriate scenario template based on business stage and history
-  const templates =
-    SCENARIO_TEMPLATES[context.businessStage] || SCENARIO_TEMPLATES.startup;
-  const availableTemplates = templates.filter(
-    (t) => !usedScenarios.includes(t.title)
+  let scenario = await tryGenerateScenarioWithAI(
+    context,
+    usedScenarios,
+    userPerformance
   );
-  const selectedTemplate =
-    availableTemplates.length > 0
-      ? availableTemplates[
-          Math.floor(Math.random() * availableTemplates.length)
-        ]
-      : templates[Math.floor(Math.random() * templates.length)];
 
-  // Generate contextual scenario with user history consideration
-  const careerSpecificTitle = generateCareerSpecificTitle(selectedTemplate.title, context.user_background.career_path);
-  
-  const scenario: SimulationScenario = {
-    id: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    title: careerSpecificTitle,
-    context: `${selectedTemplate.context} Your ${context.user_background.career_path} background gives you unique insights into this situation.`,
-    situation: generateSituation(context, selectedTemplate, userPerformance),
-    challenge: selectedTemplate.challenge,
-    stakeholders: selectedTemplate.stakeholders,
-    constraints: selectedTemplate.constraints,
-    success_metrics: selectedTemplate.success_metrics,
-  difficulty_level: await calculateDifficulty(context, userPerformance),
-    estimated_time: 10 + Math.floor(Math.random() * 10), // 10-20 minutes
-  };
+  if (!scenario) {
+    scenario = await generateScenarioFromTemplate(
+      context,
+      usedScenarios,
+      userPerformance
+    );
+  }
 
   // Generate complex multi-task simulation
   const tasks = generateComplexTasks(context, scenario, userPerformance);
@@ -319,6 +302,165 @@ export async function generateSimulation(
     ai_context,
     learning_objectives,
     total_points,
+  };
+}
+
+async function tryGenerateScenarioWithAI(
+  context: SimulationContext,
+  usedScenarios: string[],
+  userPerformance?: {
+    averageScore: number
+    strongSkills: string[]
+    weakSkills: string[]
+  }
+): Promise<SimulationScenario | null> {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    return null
+  }
+
+  try {
+    const client = new OpenAI({ apiKey })
+    const uniqueHint =
+      usedScenarios.length > 0
+        ? `Avoid reusing these previous scenario themes or titles: ${usedScenarios
+            .slice(0, 6)
+            .join(', ')}`
+        : 'Make the scenario distinct and memorable.'
+
+    const performanceSummary = userPerformance
+      ? `The learner previously scored around ${Math.round(
+          userPerformance.averageScore || 65
+        )}. Strengths: ${userPerformance.strongSkills.join(', ') || 'none noted'}. Areas to develop: ${
+          userPerformance.weakSkills.join(', ') || 'general strategic thinking'
+        }.`
+      : 'No prior performance data is available.'
+
+    const prompt = `Design a single entrepreneurship simulation scenario tailored for a Liberian secondary student.
+
+Return ONLY valid JSON with this shape:
+{
+  "title": string,
+  "context": string,
+  "situation": string,
+  "challenge": string,
+  "stakeholders": string[],
+  "constraints": string[],
+  "success_metrics": string[],
+  "estimated_time": number (minutes between 10 and 25),
+  "difficulty_level": number (1-5)
+}
+
+Make it specific to the following context:
+- Industry: ${context.industry}
+- Location: ${context.location}
+- Business stage: ${context.businessStage}
+- Resources: budget $${context.resources.budget.toLocaleString()} with team of ${context.resources.team_size}
+- Market conditions: ${context.market_conditions}
+- Learner career path: ${context.user_background.career_path}
+- Learner skill level (0-100): ${context.user_background.skill_level}
+- ${performanceSummary}
+- ${uniqueHint}
+
+Ensure stakeholders, constraints, and success metrics contain 4-6 concise items each.`
+
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are an expert instructional designer creating entrepreneurship simulations for West African secondary students. Always return clean JSON without commentary.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    })
+
+    const raw = completion.choices?.[0]?.message?.content
+    if (!raw) {
+      return null
+    }
+
+    let parsed: any
+    try {
+      parsed = JSON.parse(raw)
+    } catch (error) {
+      console.error('Failed to parse OpenAI scenario JSON:', raw)
+      return null
+    }
+
+    if (!parsed.title || !parsed.context || !parsed.challenge) {
+      return null
+    }
+
+    const scenario: SimulationScenario = {
+      id: `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      title: parsed.title,
+      context: parsed.context,
+      situation: parsed.situation || parsed.context,
+      challenge: parsed.challenge,
+      stakeholders: Array.isArray(parsed.stakeholders) && parsed.stakeholders.length > 0
+        ? parsed.stakeholders
+        : ['customers', 'team', 'investors', 'community'],
+      constraints: Array.isArray(parsed.constraints) && parsed.constraints.length > 0
+        ? parsed.constraints
+        : ['time_pressure', 'limited_budget', 'market_uncertainty'],
+      success_metrics: Array.isArray(parsed.success_metrics) && parsed.success_metrics.length > 0
+        ? parsed.success_metrics
+        : ['growth', 'customer_satisfaction', 'profitability'],
+      difficulty_level: clampNumber(parsed.difficulty_level ?? 3, 1, 5),
+      estimated_time: clampNumber(parsed.estimated_time ?? 15, 10, 25),
+    }
+
+    return scenario
+  } catch (error) {
+    console.error('OpenAI scenario generation failed:', error)
+    return null
+  }
+}
+
+async function generateScenarioFromTemplate(
+  context: SimulationContext,
+  usedScenarios: string[],
+  userPerformance?: {
+    averageScore: number
+    strongSkills: string[]
+    weakSkills: string[]
+  }
+): Promise<SimulationScenario> {
+  const templates =
+    SCENARIO_TEMPLATES[context.businessStage] || SCENARIO_TEMPLATES.startup;
+  const availableTemplates = templates.filter(
+    (t) => !usedScenarios.includes(t.title.toLowerCase())
+  );
+  const selectedTemplate =
+    availableTemplates.length > 0
+      ? availableTemplates[
+          Math.floor(Math.random() * availableTemplates.length)
+        ]
+      : templates[Math.floor(Math.random() * templates.length)];
+
+  const careerSpecificTitle = generateCareerSpecificTitle(
+    selectedTemplate.title,
+    context.user_background.career_path
+  );
+
+  return {
+    id: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    title: careerSpecificTitle,
+    context: `${selectedTemplate.context} Your ${context.user_background.career_path} background gives you unique insights into this situation.`,
+    situation: generateSituation(context, selectedTemplate, userPerformance),
+    challenge: selectedTemplate.challenge,
+    stakeholders: selectedTemplate.stakeholders,
+    constraints: selectedTemplate.constraints,
+    success_metrics: selectedTemplate.success_metrics,
+    difficulty_level: await calculateDifficulty(context, userPerformance),
+    estimated_time: 10 + Math.floor(Math.random() * 10),
   };
 }
 
@@ -1055,4 +1197,8 @@ function generateCareerSpecificTitle(baseTitle: string, careerPath: string): str
   ];
   
   return titleVariations[Math.floor(Math.random() * titleVariations.length)];
+}
+
+function clampNumber(num: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, num));
 }

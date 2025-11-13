@@ -79,12 +79,12 @@ export function Celebration({ type, message, username, participantId, onComplete
             <h3 className="text-xl font-bold text-black mb-3">Meet Your AI Mentor!</h3>
             <div className="bg-blue-50 p-3 rounded-lg mb-4 border border-blue-200">
               <p className="text-gray-800 text-sm leading-relaxed">
-                "Hey <strong>{username || 'there'}</strong>! 👋 I'm <strong>Noni</strong>, your AI mentor. I'll guide you and celebrate your wins on this entrepreneurship journey! 🚀"
+                "Hi <strong>{username || 'there'}</strong>, I'm <strong>Noni</strong>, your AI mentor. I'll guide you through your entrepreneurship journey."
               </p>
             </div>
             {participantId && (
               <div className="bg-green-50 p-3 rounded-lg mb-4 border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-2">🎯 Your Student ID</h4>
+                <h4 className="font-semibold text-green-900 mb-2">Your Student ID</h4>
                 <div className="text-2xl font-mono font-bold text-green-800 tracking-widest mb-2">
                   {participantId}
                 </div>
@@ -94,7 +94,7 @@ export function Celebration({ type, message, username, participantId, onComplete
               </div>
             )}
             <Badge className="bg-black text-white mb-4">
-              Welcome to the Community! 🎉
+              Welcome to the Community
             </Badge>
             <button
               onClick={() => {
@@ -103,7 +103,7 @@ export function Celebration({ type, message, username, participantId, onComplete
               }}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg font-medium"
             >
-              Start My Journey! 🚀
+              Start My Journey
             </button>
           </CardContent>
         </Card>

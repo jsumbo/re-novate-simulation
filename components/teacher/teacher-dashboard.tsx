@@ -426,14 +426,14 @@ export function FacilitatorDashboard({ user, students, sessions, decisions, prog
               <CardContent>
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold text-blue-900 mb-2">🎯 Focus Areas</h4>
+                    <h4 className="font-semibold text-blue-900 mb-2">Focus Areas</h4>
                     <p className="text-sm text-blue-800">
                       Students are excelling in {topSkillsData[0]?.skill || 'leadership'} but need more practice in financial literacy and strategic thinking.
                     </p>
                   </div>
                   
                   <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <h4 className="font-semibold text-green-900 mb-2">✨ Success Patterns</h4>
+                    <h4 className="font-semibold text-green-900 mb-2">Success Patterns</h4>
                     <p className="text-sm text-green-800">
                       Students with {Math.round(averageScore)}+ average scores tend to complete scenarios in collaborative learning environments.
                     </p>

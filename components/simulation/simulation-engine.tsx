@@ -1,28 +1,57 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Clock, Target, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { SimulationResponse } from "@/lib/simulation/types"
+import type { DetailedFeedback, SimulationContext, SimulationOption, SimulationResponse, SimulationTask } from "@/lib/simulation/types"
 
 interface EnhancedSimulationEngineProps {
-  user: any
+  user: {
+    id?: string
+    career_path?: string
+  }
 }
+
+type FeedbackPayload = {
+  ai_feedback: DetailedFeedback
+  outcome_score: number
+  skills_gained: Record<string, number>
+}
+
+const MAX_ROUNDS = 5
 
 export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps) {
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null)
+  const [simulationContext, setSimulationContext] = useState<SimulationContext | null>(null)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [currentRound, setCurrentRound] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [showResults, setShowResults] = useState(false)
-  const [aiResults, setAiResults] = useState<any>(null)
+  const [aiResults, setAiResults] = useState<FeedbackPayload | null>(null)
+  const [usedScenarios, setUsedScenarios] = useState<Array<{ id: string; title: string }>>([])
+
+  const decisionTask: SimulationTask | null = useMemo(() => {
+    return simulation?.tasks?.find((task) => (task.options?.length ?? 0) > 0) ?? null
+  }, [simulation])
+
+  const decisionOptions: SimulationOption[] = decisionTask?.options ?? []
+
+  const selectedOptionDetails = useMemo(() => {
+    return decisionOptions.find((opt) => opt.id === selectedOption) ?? null
+  }, [decisionOptions, selectedOption])
+
+  const otherTasks = useMemo(() => {
+    if (!simulation?.tasks) return []
+    return simulation.tasks.filter((task) => task.id !== decisionTask?.id)
+  }, [simulation, decisionTask])
 
   useEffect(() => {
-    loadSimulation()
+    loadSimulation(1, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const getRiskColor = (risk: string) => {
@@ -38,64 +67,70 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
     }
   }
 
-  const loadSimulation = async () => {
+  const loadSimulation = async (
+    roundToLoad: number,
+    historyOverride?: Array<{ id: string; title: string }>,
+  ) => {
+    const history = historyOverride ?? usedScenarios
     setIsLoading(true)
+    setSelectedOption(null)
+    setShowResults(false)
+    setAiResults(null)
+
     try {
-      const mockSimulation: SimulationResponse = {
-        scenario: {
-          id: "complex_sim_001",
-          title: "Multi-Crisis Startup Challenge",
-          context: `Your fintech startup in Monrovia faces multiple simultaneous challenges: funding is running low (2 months runway), your lead developer just quit, a competitor launched a similar product, and the Central Bank of Liberia is considering new regulations.`,
-          situation: "You're in a board meeting with investors, and they want a comprehensive response plan within 48 hours.",
-          challenge: "Navigate this multi-faceted crisis by making strategic decisions across funding, team management, competitive positioning, and regulatory compliance.",
-          stakeholders: ["investors", "remaining_employees", "customers", "co-founders", "regulatory_bodies", "competitors"],
-          constraints: ["48_hour_deadline", "limited_cash_flow", "team_uncertainty", "regulatory_ambiguity", "competitive_pressure"],
-          success_metrics: ["runway_extension", "team_stability", "market_position", "regulatory_compliance", "investor_confidence"],
-          difficulty_level: 4,
-          estimated_time: 25
-        },
-        tasks: [],
-        options: [
-          {
-            id: 'option_1',
-            text: 'Focus on aggressive fundraising while maintaining current operations',
-            reasoning: 'Leverage existing investor relationships and market traction to secure bridge funding',
-            immediate_consequences: ['High time investment in fundraising', 'Continued burn rate', 'Team uncertainty'],
-            long_term_effects: ['Potential significant funding', 'Diluted equity', 'Investor oversight'],
-            skill_development: { networking: 3, presentation: 2, strategic_thinking: 2 },
-            risk_level: 'high',
-            resource_impact: { budget_change: -15000, time_required: '3-4 weeks' }
-          },
-          {
-            id: 'option_2',
-            text: 'Pivot to a leaner, profitable model immediately',
-            reasoning: 'Cut costs dramatically and focus on revenue generation to achieve profitability',
-            immediate_consequences: ['Significant cost reductions', 'Product simplification', 'Possible layoffs'],
-            long_term_effects: ['Sustainable operations', 'Maintained control', 'Slower growth potential'],
-            skill_development: { financial_management: 3, operations: 3, adaptability: 2 },
-            risk_level: 'medium',
-            resource_impact: { budget_change: 5000, time_required: '2-3 weeks' }
-          }
-        ],
-        ai_context: "As your AI mentor, I'll analyze your comprehensive response across all tasks.",
-        learning_objectives: [],
-        total_points: 100
+      const response = await fetch('/api/simulation/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          careerPath: user?.career_path,
+          round: roundToLoad,
+          excludeScenarioIds: history.map((h) => h.id),
+          excludeScenarioTitles: history.map((h) => h.title),
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to generate simulation')
       }
 
-      setSimulation(mockSimulation)
+      const data = await response.json()
+
+      if (data?.success && data.simulation) {
+        setSimulation(data.simulation as SimulationResponse)
+        setSimulationContext(data.context as SimulationContext)
+        setUsedScenarios((prev) => {
+          const exists = prev.some((item) => item.id === data.simulation.scenario.id)
+          if (exists) {
+            return prev
+          }
+          return [
+            ...prev,
+            {
+              id: data.simulation.scenario.id,
+              title: data.simulation.scenario.title,
+            },
+          ]
+        })
+      } else {
+        setSimulation(null)
+      }
     } catch (error) {
-      console.error("Error loading simulation:", error)
+      console.error('Error loading simulation:', error)
+      setSimulation(null)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleOptionSelect = (id: string) => {
-    setSelectedOption(prev => (prev === id ? null : id))
+    setSelectedOption((prev) => (prev === id ? null : id))
   }
 
   const handleSubmitDecision = async () => {
-    if (!simulation || !selectedOption) return
+    if (!simulation || !selectedOptionDetails) return
+
     setIsLoading(true)
     try {
       const response = await fetch('/api/simulation/submit', {
@@ -103,14 +138,14 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user?.id,
-          scenarioId: simulation.scenario.id,
-          optionId: selectedOption,
-          round: currentRound
-        })
+          scenario: simulation.scenario,
+          option: selectedOptionDetails,
+          context: simulationContext,
+          round: currentRound,
+        }),
       })
 
       if (!response.ok) {
-        // Try to read text for debugging (server may return HTML error page)
         const text = await response.text()
         console.error('Submit decision failed, server response:', text)
         setAiResults(null)
@@ -119,22 +154,33 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
       }
 
       const result = await response.json()
-      if (result?.success) {
-        // API returns feedback under `feedback` key
-        setAiResults(result.feedback || result.analysis || null)
-        setShowResults(true)
+      if (result?.success && result.feedback) {
+        setAiResults(result.feedback as FeedbackPayload)
       } else {
         setAiResults(null)
-        setShowResults(true)
       }
+      setShowResults(true)
     } catch (error) {
       console.error('submit error', error)
+      setAiResults(null)
+      setShowResults(true)
     } finally {
       setIsLoading(false)
     }
   }
 
-  if (isLoading) {
+  const handleNextRound = () => {
+    if (currentRound >= MAX_ROUNDS) {
+      setShowResults(false)
+      return
+    }
+    const nextRound = currentRound + 1
+    setCurrentRound(nextRound)
+    setShowResults(false)
+    loadSimulation(nextRound)
+  }
+
+  if (isLoading && !simulation) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -150,7 +196,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600 mb-4">Failed to load simulation</p>
-          <Button onClick={loadSimulation}>Try Again</Button>
+          <Button onClick={() => loadSimulation(currentRound)}>Try Again</Button>
         </div>
       </div>
     )
@@ -168,7 +214,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           </Link>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Business Simulation</h1>
-            <p className="text-gray-600">Round {currentRound} of 5</p>
+            <p className="text-gray-600">Round {currentRound} of {MAX_ROUNDS}</p>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock className="h-4 w-4" />
@@ -177,68 +223,54 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
         </div>
 
         <div className="mb-6">
-          <Progress value={(currentRound / 5) * 100} className="h-2" />
+          <Progress value={(currentRound / MAX_ROUNDS) * 100} className="h-2" />
         </div>
 
         <Card className="mb-6">
           <CardHeader>
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <CardTitle className="text-xl mb-2">{simulation.scenario.title}</CardTitle>
                 <Badge variant="outline" className="mb-2">
                   Difficulty: {simulation.scenario.difficulty_level}/5
                 </Badge>
               </div>
-              <Badge className={`bg-gray-100 text-gray-800`}>
-                {user?.career_path}
+              <Badge className="bg-gray-100 text-gray-800">
+                {user?.career_path || 'Student'}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <section>
               <h3 className="font-semibold mb-2">Context</h3>
-              <p className="text-gray-700">{simulation.scenario.context}</p>
-            </div>
+              <p className="text-gray-700 leading-relaxed">{simulation.scenario.context}</p>
+            </section>
+            <section>
+              <h3 className="font-semibold mb-2">Current Situation</h3>
+              <p className="text-gray-700 leading-relaxed">{simulation.scenario.situation}</p>
+            </section>
+            <section>
+              <h3 className="font-semibold mb-2">Primary Challenge</h3>
+              <p className="text-gray-700 leading-relaxed">{simulation.scenario.challenge}</p>
+            </section>
 
-            <div>
-              <h3 className="font-semibold mb-2">Situation</h3>
-              <p className="text-gray-700">{simulation.scenario.situation}</p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-2">Challenge</h3>
-              <p className="text-gray-700 font-medium">{simulation.scenario.challenge}</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Stakeholders</h4>
-                <div className="flex flex-wrap gap-1">
+                <h4 className="font-semibold mb-2 text-gray-800">Key Stakeholders</h4>
+                <div className="flex flex-wrap gap-2">
                   {simulation.scenario.stakeholders.map((stakeholder) => (
-                    <Badge key={stakeholder} variant="secondary" className="text-xs">
-                      {stakeholder}
+                    <Badge key={stakeholder} variant="outline" className="border-gray-300 text-gray-700">
+                      {stakeholder.replace('_', ' ')}
                     </Badge>
                   ))}
                 </div>
               </div>
-
               <div>
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Constraints</h4>
-                <div className="flex flex-wrap gap-1">
+                <h4 className="font-semibold mb-2 text-gray-800">Constraints</h4>
+                <div className="flex flex-wrap gap-2">
                   {simulation.scenario.constraints.map((constraint) => (
-                    <Badge key={constraint} variant="outline" className="text-xs">
-                      {constraint.replace(/_/g, ' ')}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Success Metrics</h4>
-                <div className="flex flex-wrap gap-1">
-                  {simulation.scenario.success_metrics.map((metric) => (
-                    <Badge key={metric} variant="secondary" className="text-xs bg-green-100 text-green-800">
-                      {metric.replace(/_/g, ' ')}
+                    <Badge key={constraint} variant="outline" className="border-gray-300 text-gray-700">
+                      {constraint.replace('_', ' ')}
                     </Badge>
                   ))}
                 </div>
@@ -247,92 +279,107 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           </CardContent>
         </Card>
 
-        <div className="space-y-4 mb-6">
-          <h2 className="text-xl font-semibold">Your Options</h2>
-          {(simulation as any).options?.map((option: any, index: number) => (
-            <Card 
-              key={option.id}
-              className={`cursor-pointer transition-all border-2 ${
-                selectedOption === option.id 
-                  ? 'border-black bg-black text-white shadow-lg transform scale-[1.02]' 
-                  : 'border-gray-200 hover:border-gray-400 hover:shadow-md'
-              }`}
-              onClick={() => handleOptionSelect(option.id)}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-                    selectedOption === option.id 
-                      ? 'bg-white text-black' 
-                      : 'bg-black text-white'
-                  }`}>
-                    {selectedOption === option.id ? '✓' : index + 1}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className={`font-semibold mb-2 ${selectedOption === option.id ? 'text-white' : 'text-gray-900'}`}>
-                      {option.text}
-                    </h3>
-                    <p className={`text-sm mb-3 ${selectedOption === option.id ? 'text-gray-200' : 'text-gray-600'}`}>
-                      {option.reasoning}
-                    </p>
+        {decisionOptions.length > 0 ? (
+          <div className="grid gap-4 mb-6">
+            {decisionOptions.map((option) => (
+              <Card
+                key={option.id}
+                className={`transition-all border-2 ${
+                  selectedOption === option.id
+                    ? 'border-black shadow-lg'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => handleOptionSelect(option.id)}
+              >
+                <CardContent className="p-5">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${getRiskColor(option.risk_level)} capitalize`}>{option.risk_level} risk</Badge>
+                      <span className="text-sm text-gray-500">{option.resource_impact.time_required}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-black mb-2">
+                        {option.text}
+                      </h3>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {option.reasoning}
+                      </p>
+                    </div>
 
-                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className={`font-medium mb-1 flex items-center gap-1 ${selectedOption === option.id ? 'text-white' : 'text-gray-900'}`}>
-                          <TrendingUp className="h-3 w-3" />
-                          Immediate Effects
+                        <h4 className="font-medium text-sm text-gray-800 mb-1 flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-black" />
+                          Immediate Impact
                         </h4>
-                        <ul className={`space-y-1 ${selectedOption === option.id ? 'text-gray-200' : 'text-gray-600'}`}>
-                          {option.immediate_consequences?.map((consequence: string, i: number) => (
-                            <li key={i} className="flex items-start gap-1">
-                              <span className="text-gray-400">•</span>
-                              {consequence}
-                            </li>
+                        <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                          {option.immediate_consequences.map((impact) => (
+                            <li key={impact}>{impact}</li>
                           ))}
                         </ul>
                       </div>
-
                       <div>
-                        <h4 className={`font-medium mb-1 flex items-center gap-1 ${selectedOption === option.id ? 'text-white' : 'text-gray-900'}`}>
-                          <Target className="h-3 w-3" />
-                          Long-term Impact
+                        <h4 className="font-medium text-sm text-gray-800 mb-1 flex items-center gap-2">
+                          <Target className="h-4 w-4 text-black" />
+                          Long-Term Outlook
                         </h4>
-                        <ul className={`space-y-1 ${selectedOption === option.id ? 'text-gray-200' : 'text-gray-600'}`}>
-                          {option.long_term_effects?.map((effect: string, i: number) => (
-                            <li key={i} className="flex items-start gap-1">
-                              <span className="text-gray-400">•</span>
-                              {effect}
-                            </li>
+                        <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                          {option.long_term_effects.map((effect) => (
+                            <li key={effect}>{effect}</li>
                           ))}
                         </ul>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t">
-                      <div className="flex items-center gap-4">
-                        <Badge className={getRiskColor(option.risk_level)}>
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          {option.risk_level} risk
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <AlertTriangle className="h-4 w-4 text-black" />
+                      Budget impact: {option.resource_impact.budget_change >= 0 ? '+' : ''}
+                      {option.resource_impact.budget_change.toLocaleString('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                      })}
+                    </div>
+
+                    <div className="flex gap-1 flex-wrap">
+                      {Object.entries(option.skill_development || {}).map(([skill, points]) => (
+                        <Badge key={skill} variant="secondary" className="text-xs">
+                          +{points} {skill.replace('_', ' ')}
                         </Badge>
-                        <span className="text-sm text-gray-600">
-                          {option.resource_impact?.time_required}
-                        </span>
-                      </div>
-
-                      <div className="flex gap-1">
-                        {Object.entries(option.skill_development || {}).map(([skill, points]) => (
-                          <Badge key={skill} variant="secondary" className="text-xs">
-                            +{points} {skill}
-                          </Badge>
-                        ))}
-                      </div>
+                      ))}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="mb-6 border-dashed border-gray-300">
+            <CardContent className="p-6 text-center text-gray-600">
+              <p>No selectable options are available for this round. Review the scenario details and complete the required tasks.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {otherTasks.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-base">Additional Tasks</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {otherTasks.map((task) => (
+                <div key={task.id} className="border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-gray-800">{task.title}</h4>
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {task.type.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed">{task.description}</p>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mb-6 bg-blue-50 border-blue-200">
           <CardContent className="p-4">
@@ -342,52 +389,86 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
               </div>
               <div>
                 <h3 className="font-semibold text-blue-900 mb-1">AI Mentor Guidance</h3>
-                <p className="text-blue-800 text-sm">{simulation.ai_context}</p>
+                <p className="text-blue-800 text-sm leading-relaxed">{simulation.ai_context}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {showResults && selectedOption && (
+        {showResults && (
           <Card className="mb-6 bg-green-50 border-green-200">
             <CardHeader>
               <CardTitle className="text-green-900">Decision Results</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-green-900 mb-2">Your Choice:</h3>
-                  <p className="text-green-800">
-                    {(simulation as any).options.find((opt: any) => opt.id === selectedOption)?.text}
-                  </p>
-                </div>
+            <CardContent className="space-y-6">
+              <section className="space-y-2">
+                <h3 className="font-semibold text-green-900">Your Choice</h3>
+                <p className="text-green-800 leading-relaxed">
+                  {selectedOptionDetails?.text || 'No option selected'}
+                </p>
+              </section>
 
-                <div>
-                  <h3 className="font-semibold text-green-900 mb-2">AI Feedback:</h3>
-                  <p className="text-green-800">
-                    {aiResults?.summary || 'Excellent decision! Your choice demonstrates strong entrepreneurial thinking and understanding of the Liberian business context.'}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-green-200">
-                  <div className="flex gap-2">
-                    <Badge className="bg-green-600 text-white">Score: {aiResults?.score || 85}/100</Badge>
-                    <Badge variant="outline" className="border-green-600 text-green-700">+3 Leadership</Badge>
-                    <Badge variant="outline" className="border-green-600 text-green-700">+2 Strategy</Badge>
+              {aiResults && (
+                <section className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="bg-green-600 text-white">Score: {aiResults.outcome_score}/100</Badge>
+                    {Object.entries(aiResults.skills_gained || {}).map(([skill, points]) => (
+                      <Badge key={skill} variant="outline" className="border-green-600 text-green-700">
+                        +{points} {skill.replace('_', ' ')}
+                      </Badge>
+                    ))}
                   </div>
 
-                  <Button 
-                    onClick={() => {
-                      setCurrentRound(prev => prev + 1)
-                      setSelectedOption(null)
-                      setShowResults(false)
-                      loadSimulation()
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    Next Round
-                  </Button>
+                  <div>
+                    <h4 className="font-semibold text-green-900 mb-2">Overall Assessment</h4>
+                    <p className="text-green-800 leading-relaxed">{aiResults.ai_feedback.overall_assessment}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h5 className="font-semibold text-green-900 mb-2">Strengths</h5>
+                      <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
+                        {aiResults.ai_feedback.decision_analysis.strengths.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h5 className="font-semibold text-green-900 mb-2">Areas for Improvement</h5>
+                      <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
+                        {aiResults.ai_feedback.decision_analysis.areas_for_improvement.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {aiResults.ai_feedback.reflection_questions.length > 0 && (
+                    <div>
+                      <h5 className="font-semibold text-green-900 mb-2">Reflection Questions</h5>
+                      <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
+                        {aiResults.ai_feedback.reflection_questions.slice(0, 3).map((question) => (
+                          <li key={question}>{question}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              <div className="flex items-center justify-between pt-4 border-t border-green-200">
+                <div className="text-sm text-green-700">
+                  {currentRound >= MAX_ROUNDS
+                    ? 'You have completed all rounds for this simulation.'
+                    : `Prepare for round ${currentRound + 1} to continue your learning journey.`}
                 </div>
+                <Button
+                  onClick={handleNextRound}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={currentRound >= MAX_ROUNDS}
+                >
+                  {currentRound >= MAX_ROUNDS ? 'Simulation Complete' : 'Next Round'}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -395,9 +476,9 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
 
         {!showResults && (
           <div className="flex justify-center">
-            <Button 
+            <Button
               onClick={handleSubmitDecision}
-              disabled={!selectedOption || isLoading}
+              disabled={!selectedOptionDetails || isLoading}
               size="lg"
               className="bg-black hover:bg-gray-800 text-white px-8"
             >

@@ -447,13 +447,9 @@ export async function submitDecision(
     };
   }
 
-  // Find the selected option details
   const option = scenario.options.find((opt: any) => opt.id === selectedOptionId);
-
-  // Generate AI feedback (mock for now - will use OpenAI when integrated)
   const aiFeedback = await generateAIFeedback(scenario, option);
 
-  // Calculate outcome score (simplified algorithm)
   const outcomeScore = calculateOutcomeScore(
     scenario.difficulty_level,
     selectedOptionId
@@ -461,7 +457,6 @@ export async function submitDecision(
 
   const skillsGained = option?.skills_impact || {};
 
-  // Save decision
   const { error: decisionError } = await supabase.from("decisions").insert({
     session_id: sessionId,
     scenario_id: scenarioId,

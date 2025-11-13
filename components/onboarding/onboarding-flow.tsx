@@ -174,23 +174,23 @@ const interestOptions: {
   ]
 
 const motivationOptions = [
-  { id: "career", text: "I want to prepare for my future career", icon: "💼" },
-  { id: "skills", text: "I want to develop new skills", icon: "🚀" },
-  { id: "curiosity", text: "I'm curious about this field", icon: "🤔" },
-  { id: "impact", text: "I want to make a positive impact", icon: "🌟" },
-  { id: "challenge", text: "I enjoy challenging myself", icon: "💪" },
-  { id: "fun", text: "It sounds fun and interesting", icon: "😄" }
+  { id: "career", text: "I want to prepare for my future career", icon: "" },
+  { id: "skills", text: "I want to develop new skills", icon: "" },
+  { id: "curiosity", text: "I'm curious about this field", icon: "" },
+  { id: "impact", text: "I want to make a positive impact", icon: "" },
+  { id: "challenge", text: "I enjoy challenging myself", icon: "" },
+  { id: "fun", text: "It sounds fun and interesting", icon: "" }
 ]
 
 const aspirationOptions = [
-  { id: "entrepreneur", text: "Start my own business", icon: "🚀" },
-  { id: "corporate", text: "Work for a big company", icon: "🏢" },
-  { id: "nonprofit", text: "Help communities and causes", icon: "❤️" },
-  { id: "government", text: "Work in government or policy", icon: "🏛️" },
-  { id: "education", text: "Become a teacher or trainer", icon: "📚" },
-  { id: "freelance", text: "Work independently as a freelancer", icon: "💻" },
-  { id: "research", text: "Do research and innovation", icon: "🔬" },
-  { id: "unsure", text: "I'm still exploring my options", icon: "🤷‍♀️" }
+  { id: "entrepreneur", text: "Start my own business", icon: "" },
+  { id: "corporate", text: "Work for a big company", icon: "" },
+  { id: "nonprofit", text: "Help communities and causes", icon: "" },
+  { id: "government", text: "Work in government or policy", icon: "" },
+  { id: "education", text: "Become a teacher or trainer", icon: "" },
+  { id: "freelance", text: "Work independently as a freelancer", icon: "" },
+  { id: "research", text: "Do research and innovation", icon: "" },
+  { id: "unsure", text: "I'm still exploring my options", icon: "" }
 ]
 
 interface EnhancedOnboardingFlowProps {
@@ -344,8 +344,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <Card className="border-gray-200 shadow-lg max-w-2xl mx-auto bg-white">
             <CardHeader className="text-center px-3 sm:px-6 py-4 sm:py-6">
-              <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">🎉</div>
-              <CardTitle className="text-xl sm:text-2xl lg:text-3xl text-black leading-tight">Welcome to RE-Novate!</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl lg:text-3xl text-black leading-tight">Welcome to RE-Novate</CardTitle>
               <CardDescription className="text-sm sm:text-base lg:text-lg text-gray-600 mt-2">
                 Let's set up your personalized learning journey at <strong>{user.schools?.name}</strong>
               </CardDescription>
@@ -354,23 +353,23 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
               <div className="bg-gray-50 rounded-lg p-3 sm:p-4 lg:p-6 border border-gray-200">
                 <h3 className="font-semibold text-black mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
                   <Star className="h-4 w-4 sm:h-5 sm:w-5 text-black flex-shrink-0" />
-                  Your Adventure Awaits!
+                  Get Started
                 </h3>
                 <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm lg:text-base text-gray-700">
                   <li className="flex items-start gap-2">
-                    <span className="text-black text-sm sm:text-base flex-shrink-0">✨</span>
-                    <span>Create your unique avatar and profile</span>
+                    <span className="text-black text-sm sm:text-base flex-shrink-0">•</span>
+                    <span>Create your avatar and profile</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-black text-sm sm:text-base flex-shrink-0">🧠</span>
-                    <span>Take a fun quiz to discover your starting level</span>
+                    <span className="text-black text-sm sm:text-base flex-shrink-0">•</span>
+                    <span>Take a quiz to assess your starting level</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-black text-sm sm:text-base flex-shrink-0">🎯</span>
-                    <span>Set exciting goals for your learning journey</span>
+                    <span className="text-black text-sm sm:text-base flex-shrink-0">•</span>
+                    <span>Set your learning goals</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-black text-sm sm:text-base flex-shrink-0">🚀</span>
+                    <span className="text-black text-sm sm:text-base flex-shrink-0">•</span>
                     <span>Explore real-world scenarios and challenges</span>
                   </li>
                 </ul>
@@ -394,7 +393,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <Card className="border-gray-200 shadow-lg max-w-md mx-auto bg-white">
             <CardHeader className="text-center px-3 sm:px-6 py-4 sm:py-6">
-              <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">🎮</div>
               <CardTitle className="text-xl sm:text-2xl text-black leading-tight">Choose Your User Name</CardTitle>
               <CardDescription className="text-sm sm:text-base text-gray-600 mt-2">
                 Pick a cool username that represents you!
@@ -413,12 +411,12 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                   maxLength={20}
                 />
                 <p className="text-xs text-gray-500">
-                  This will be your identity in RE-Novate. Make it unique! 🌟
+                  This will be your identity in RE-Novate
                 </p>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <h3 className="font-semibold text-black mb-2 text-sm">💡 Username Tips:</h3>
+                <h3 className="font-semibold text-black mb-2 text-sm">Username Tips</h3>
                 <ul className="text-xs text-gray-700 space-y-1">
                   <li>• Keep it fun and positive</li>
                   <li>• No personal information (real name, phone, etc.)</li>
@@ -443,7 +441,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <Card className="border-gray-200 shadow-lg max-w-md mx-auto bg-white">
             <CardHeader className="text-center px-3 sm:px-6 py-4 sm:py-6">
-              <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">👤</div>
               <CardTitle className="text-xl sm:text-2xl text-black leading-tight">Tell Us About Yourself!</CardTitle>
               <CardDescription className="text-sm sm:text-base text-gray-600 mt-2">
                 Help us personalize your experience, <strong>{onboardingData.username}</strong>!
@@ -476,7 +473,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                       }`}
                       onClick={() => setOnboardingData(prev => ({ ...prev, gender }))}
                     >
-                      {gender === "Male" ? "👨" : gender === "Female" ? "👩" : "🧑"} {gender}
+                      {gender === "Male" ? "" : gender === "Female" ? "" : ""} {gender}
                     </Button>
                   ))}
                 </div>
@@ -514,9 +511,9 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <h3 className="font-semibold text-black mb-2 text-sm">🔒 Privacy First:</h3>
+                <h3 className="font-semibold text-black mb-2 text-sm"> Privacy First:</h3>
                 <p className="text-xs text-gray-700">
-                  Your personal information is secure and only used to personalize your learning experience. We never share it with anyone! 🛡️
+                  Your personal information is secure and only used to personalize your learning experience. We never share it with anyone! 
                 </p>
               </div>
 
@@ -536,7 +533,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <div className="space-y-4 sm:space-y-6">
             <div className="text-center px-2">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black mb-2">Choose Your Adventure! 🌟</h2>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black mb-2">Choose Your Interest Area</h2>
               <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
                 Pick the area that excites you most. Don't worry - you can always explore others later!
               </p>
@@ -601,7 +598,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <div className="max-w-md mx-auto px-2">
             <div className="text-center mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-black mb-2">Create Your Avatar! ✨</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-black mb-2">Create Your Avatar</h2>
             </div>
             <AvatarBuilder
               selectedAvatar={onboardingData.avatar}
@@ -614,9 +611,9 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-black mb-2">Quick Knowledge Check! 🧠</h2>
+              <h2 className="text-2xl font-bold text-black mb-2">Knowledge Check</h2>
               <p className="text-gray-600">
-                Let's see what you already know about {onboardingData.interestArea}. No pressure - this helps us personalize your experience!
+                Let's see what you already know about {onboardingData.interestArea}. This helps us personalize your experience!
               </p>
             </div>
             <SkillsQuiz
@@ -652,7 +649,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-black mb-2">Set Your Goals! 🎯</h2>
+              <h2 className="text-2xl font-bold text-black mb-2">Set Your Goals</h2>
               <p className="text-gray-600">
                 What do you want to achieve? Setting goals helps you stay motivated and track your progress!
               </p>
@@ -681,8 +678,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
           <Card className="max-w-2xl mx-auto border-gray-200">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl text-black flex items-center justify-center gap-2">
-                <Zap className="h-6 w-6 text-black" />
-                What Motivates You? 💫
+                What Motivates You? 
               </CardTitle>
               <CardDescription>
                 Understanding your motivation helps us create the perfect learning experience for you!
@@ -715,8 +711,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
           <Card className="max-w-2xl mx-auto border-gray-200">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl text-black flex items-center justify-center gap-2">
-                <Trophy className="h-6 w-6 text-black" />
-                Dream Big! 🌟
+                Your Aspirations
               </CardTitle>
               <CardDescription>
                 What do you hope to do after school? Your dreams guide your learning journey!
@@ -748,7 +743,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
         return (
           <Card className="max-w-2xl mx-auto border-gray-200">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl text-black">How Do You Like to Learn? 🤝</CardTitle>
+              <CardTitle className="text-2xl text-black">How Do You Like to Learn? </CardTitle>
               <CardDescription>
                 Everyone learns differently. Let us know your preference so we can tailor your experience!
               </CardDescription>
@@ -762,7 +757,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                 >
                   <div className="text-left">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-3xl">🧘‍♀️</span>
                       <span className="font-semibold">I prefer working alone</span>
                     </div>
                     <p className="text-sm text-gray-600">I like to think things through by myself and work at my own pace</p>
@@ -776,7 +770,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                 >
                   <div className="text-left">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-3xl">👥</span>
                       <span className="font-semibold">I love working with others</span>
                     </div>
                     <p className="text-sm text-gray-600">I enjoy discussing ideas, sharing thoughts, and learning from teammates</p>
@@ -790,7 +783,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                 >
                   <div className="text-left">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-3xl">⚖️</span>
                       <span className="font-semibold">I like a mix of both</span>
                     </div>
                     <p className="text-sm text-gray-600">Sometimes I want to work alone, sometimes with others - it depends!</p>
@@ -817,7 +809,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                 <div className="space-y-4">
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="font-semibold text-black mb-2 flex items-center gap-2">
-                      <Target className="h-4 w-4" />
                       Scenarios & Challenges
                     </h3>
                     <p className="text-sm text-gray-700">
@@ -827,7 +818,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
 
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="font-semibold text-black mb-2 flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
                       AI Mentor
                     </h3>
                     <p className="text-sm text-gray-700">
@@ -839,7 +829,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                 <div className="space-y-4">
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="font-semibold text-black mb-2 flex items-center gap-2">
-                      <Trophy className="h-4 w-4" />
                       Progress Tracking
                     </h3>
                     <p className="text-sm text-gray-700">
@@ -849,7 +838,6 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
 
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="font-semibold text-black mb-2 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
                       School Community
                     </h3>
                     <p className="text-sm text-gray-700">
@@ -861,8 +849,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
 
               <div className="bg-gray-100 p-6 rounded-lg border border-gray-300">
                 <h3 className="font-semibold text-black mb-3 flex items-center gap-2">
-                  <Star className="h-5 w-5 text-black" />
-                  Pro Tips for Success! 🚀
+                  Tips for Success
                 </h3>
                 <ul className="space-y-2 text-sm text-gray-700">
                   <li className="flex items-start gap-2">
@@ -892,8 +879,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
           <Card className="max-w-2xl mx-auto border-gray-200">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl text-black flex items-center justify-center gap-2">
-                <Users className="h-6 w-6 text-black" />
-                Your School Community 🏫
+                Your School Community 
               </CardTitle>
               <CardDescription>
                 You're part of an amazing learning community at <strong>{user.schools?.name}</strong>!
@@ -901,18 +887,18 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                <h3 className="font-semibold text-black mb-3">🌟 You're Ready to Begin!</h3>
+                <h3 className="font-semibold text-black mb-3">Profile Summary</h3>
                 <div className="space-y-3 text-sm text-gray-700">
-                  <p>✨ <strong>Name:</strong> {onboardingData.fullName}</p>
-                  <p>🎯 <strong>Interest Area:</strong> {onboardingData.interestArea}</p>
-                  <p>🧠 <strong>Skill Level:</strong> {onboardingData.skillLevel}</p>
-                  <p>🎯 <strong>Goals Set:</strong> {onboardingData.goals.length}/3</p>
-                  <p>🤝 <strong>Learning Style:</strong> {onboardingData.learningPreference === 'individual' ? 'Independent Learner' : onboardingData.learningPreference === 'collaborative' ? 'Team Player' : 'Flexible Learner'}</p>
+                  <p><strong>Name:</strong> {onboardingData.fullName}</p>
+                  <p><strong>Interest Area:</strong> {onboardingData.interestArea}</p>
+                  <p><strong>Skill Level:</strong> {onboardingData.skillLevel}</p>
+                  <p><strong>Goals Set:</strong> {onboardingData.goals.length}/3</p>
+                  <p><strong>Learning Style:</strong> {onboardingData.learningPreference === 'individual' ? 'Independent Learner' : onboardingData.learningPreference === 'collaborative' ? 'Team Player' : 'Flexible Learner'}</p>
                 </div>
               </div>
 
               <div className="bg-gray-100 p-6 rounded-lg border border-gray-300">
-                <h3 className="font-semibold text-black mb-3">🚀 What Happens Next?</h3>
+                <h3 className="font-semibold text-black mb-3">What Happens Next</h3>
                 <ul className="space-y-2 text-sm text-gray-700">
                   <li className="flex items-start gap-2">
                     <span className="text-black font-bold">2.</span>
@@ -942,7 +928,7 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
                 >
                   {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   {!isLoading && <Trophy className="mr-2 h-5 w-5" />}
-                  {isLoading ? "Setting up your profile..." : "Launch My Journey! 🚀"}
+                  {isLoading ? "Setting up your profile..." : "Complete Setup"}
                 </Button>
               </div>
             </CardContent>
@@ -977,13 +963,11 @@ export function EnhancedOnboardingFlow({ user }: EnhancedOnboardingFlowProps) {
           {/* Optional milestone UI for 25-50% progress can be added here */}
           {progress >= 50 && progress < 75 && (
             <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
-              <Trophy className="h-3 w-3 text-black" />
             </div>
           )}
           {progress >= 75 && progress < 100 && (
             <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
-              <Target className="h-3 w-3 text-black" />
-              <span>Almost done! Final stretch! 💪</span>
+              <span>Almost done</span>
             </div>
           )}
         </div>

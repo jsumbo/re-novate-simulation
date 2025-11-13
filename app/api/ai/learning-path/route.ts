@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const fallbackPath = {
       learningPath: {
         title: "Your Personalized Learning Journey",
-        description: `Welcome to your ${interestArea} learning adventure! We've created a path that matches your ${skillLevel} level and will help you achieve your goals.`,
+        description: `Welcome to your ${body.interestArea || 'entrepreneurship'} learning adventure! We've created a path that matches your ${body.skillLevel || 'beginner'} level and will help you achieve your goals.`,
         modules: [
           {
             id: 1,

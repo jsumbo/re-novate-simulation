@@ -341,8 +341,6 @@ export async function recordSimulationDecision(
       return progressResult
     }
 
-    // Record the decision (this would typically go to a decisions table)
-    // For now, we'll store it in the session_data
     const updatedSessionData = {
       ...simulation.session_data,
       decisions: [

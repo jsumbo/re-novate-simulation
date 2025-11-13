@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { structuredData } from '@/lib/metadata'
+import { ClearServiceWorker } from './components/clear-service-worker'
 import './globals.css'
 
 const geist = Geist({ subsets: ["latin"] });
@@ -94,6 +95,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Preload hero background image to reduce perceived load time */}
@@ -118,6 +120,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${geist.className} antialiased`}>
+        <ClearServiceWorker />
         {children}
         <Toaster position="top-right" />
         <Analytics />

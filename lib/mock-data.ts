@@ -1,5 +1,3 @@
-// Mock data for development and testing
-
 export const mockScenarios = [
   {
     id: "1",
@@ -27,7 +25,6 @@ export const mockScenarios = [
   }
 ]
 
-// Mock teacher/facilitator data
 export const mockTeacherUser = {
   id: "teacher-1",
   participant_id: "FAC001",

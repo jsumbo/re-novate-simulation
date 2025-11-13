@@ -400,7 +400,7 @@ export function StudentDashboard({ user, progress, sessions, stats }: StudentDas
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold mb-1">
-                      {totalSkillPoints === 0 ? `Welcome, ${user.username || user.participant_id}! 🎉` : `Welcome Back, ${user.username || user.participant_id}! 👋`}
+                      {totalSkillPoints === 0 ? `Welcome, ${user.username || user.participant_id}` : `Welcome Back, ${user.username || user.participant_id}`}
                     </h1>
                     <p className="text-gray-300 text-lg">
                       {generateCareerWelcomeMessage(user.career_path, careerInfo, totalSkillPoints)}
@@ -418,7 +418,7 @@ export function StudentDashboard({ user, progress, sessions, stats }: StudentDas
                   <Progress value={levelProgress} className="h-2 mb-2 bg-white/20" />
                   <p className="text-sm text-gray-300">
                     {totalSkillPoints === 0
-                      ? "🌟 Start your first simulation to begin earning points!"
+                      ? "Start your first simulation to begin earning points"
                       : `${totalSkillPoints} / ${nextLevelPoints} points to Level ${level + 1}`
                     }
                   </p>
@@ -451,12 +451,12 @@ export function StudentDashboard({ user, progress, sessions, stats }: StudentDas
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <h3 className="text-2xl font-bold text-black mb-2">
-                    {hasActiveSession ? "🔥 Continue Your Epic Journey!" : "🚀 Ready to Level Up Your Skills?"}
+                    {hasActiveSession ? "Continue Your Simulation" : "Ready to Start Learning?"}
                   </h3>
                   <p className="text-gray-700 mb-3">
                     {hasActiveSession
-                      ? `You're crushing it! Round ${sessions.find((s) => s.status === "in_progress")?.current_round || 1} of 5 awaits. Keep the momentum going! 💪`
-                      : `Get started with real-world simulations and master your ${careerInfo.focus.toLowerCase()} skills. Every decision counts! 🎯`}
+                      ? `Round ${sessions.find((s) => s.status === "in_progress")?.current_round || 1} of 5. Continue making decisions to progress.`
+                      : `Get started with real-world simulations and develop your ${careerInfo.focus.toLowerCase()} skills.`}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Clock className="h-4 w-4" />

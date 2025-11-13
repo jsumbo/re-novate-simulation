@@ -1,7 +1,6 @@
 'use client'
 
 import { useRouter } from "next/navigation"
-import Head from "next/head"
 import { HeroSection } from "@/components/landing/HeroSection"
 import { landingPageConfig } from "@/lib/landing-config"
 
@@ -29,15 +28,7 @@ export default function HomePage() {
   }
 
   return (
-    <>
-      <Head>
-        <link
-          rel="preload"
-          as="image"
-          href={landingPageConfig.hero.backgroundImage}
-        />
-      </Head>
-      <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black">
         <HeroSection
           backgroundImage={landingPageConfig.hero.backgroundImage}
           title={landingPageConfig.hero.title}
@@ -46,7 +37,6 @@ export default function HomePage() {
           onStudentClick={handleStudentClick}
           onFacilitatorClick={handleFacilitatorClick}
         />
-      </div>
-    </>
+    </div>
   )
 }

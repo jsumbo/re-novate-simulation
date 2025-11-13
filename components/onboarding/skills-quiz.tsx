@@ -212,7 +212,7 @@ export function SkillsQuiz({ interestArea, username, onQuizComplete }: SkillsQui
         <CardContent className="p-8 text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-black" />
           <h3 className="text-lg font-medium text-black mb-2">
-            Preparing Your Quiz, {username}! 🧠
+            Preparing Your Quiz, {username}
           </h3>
           <p className="text-sm text-gray-600">
             We're creating personalized questions just for you...
@@ -249,18 +249,17 @@ export function SkillsQuiz({ interestArea, username, onQuizComplete }: SkillsQui
   if (showCompletionSummary && finalQuizData) {
     const getEncouragingMessage = () => {
       if (finalQuizData.percentage >= 80) {
-        return `Wow ${username}! 🌟 You absolutely crushed this quiz! Your ${finalQuizData.level.toLowerCase()} level knowledge in ${interestArea} is impressive. You're clearly passionate about this field and it shows! I can already see you're going to do amazing things. Keep that curiosity and confidence - they'll take you far! 🚀`
+        return `${username}, you scored ${finalQuizData.percentage}%! Your ${finalQuizData.level.toLowerCase()} level knowledge in ${interestArea} is strong. You're well-prepared to continue learning and developing your skills.`
       } else if (finalQuizData.percentage >= 60) {
-        return `Hey ${username}! 👏 Nice work on the quiz! You've got a solid ${finalQuizData.level.toLowerCase()} foundation in ${interestArea}, and that's exactly where many successful entrepreneurs started. What I love is that you're here, ready to learn and grow. Every expert was once a beginner, and you're already on your way! 💪`
+        return `${username}, you scored ${finalQuizData.percentage}%. You have a solid ${finalQuizData.level.toLowerCase()} foundation in ${interestArea}. Continue learning and practicing to build on this foundation.`
       } else {
-        return `${username}, you know what? 🤗 This is actually perfect! Starting as a ${finalQuizData.level.toLowerCase()} means you get to experience that amazing feeling of discovery and growth. Some of the most successful people I know started exactly where you are. Your willingness to learn is your superpower, and I'm excited to be part of your journey! 🌱`
+        return `${username}, you scored ${finalQuizData.percentage}%. Starting at the ${finalQuizData.level.toLowerCase()} level is a good place to begin. Focus on learning the fundamentals and you'll see steady progress.`
       }
     }
 
     return (
       <Card className="border-gray-200">
         <CardContent className="p-6 text-center">
-          <div className="text-5xl mb-4">🎯</div>
           <h3 className="text-xl font-bold text-black mb-4">
             Quiz Complete, {username}!
           </h3>
@@ -308,7 +307,7 @@ export function SkillsQuiz({ interestArea, username, onQuizComplete }: SkillsQui
       <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
         <div className="flex items-center justify-between mb-2">
           <CardTitle className="text-base sm:text-lg text-black">
-            {username}'s Knowledge Check! 🧠
+            Knowledge Check
           </CardTitle>
           <Badge variant="outline" className="text-xs px-2 py-1 border-black text-black">
             {currentQuestion + 1} of {questions.length}
@@ -370,8 +369,8 @@ export function SkillsQuiz({ interestArea, username, onQuizComplete }: SkillsQui
                       : 'text-red-800'
                   }`}>
                     {selectedAnswer === questions[currentQuestion].correctAnswer 
-                      ? `🎉 Excellent, ${username}! You got it right!` 
-                      : `🤔 Not quite, ${username}. Let's learn from this!`
+                      ? `Correct, ${username}!` 
+                      : `Incorrect, ${username}. Here's the explanation:`
                     }
                   </p>
                 </div>
