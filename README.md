@@ -170,3 +170,30 @@ Database configuration is handled through environment variables. The app uses:
 - **Real-time subscriptions** - For live updates
 - **Edge functions** - For server-side logic
 
+
+
+Let's add these: 
+Progress bar showing completion (e.g., "Round 3 of 5")
+Real-time hints when users hover over options
+Quick tips explaining business concepts
+"Why this matters" context for each decision
+
+Scenario variety
+Different industries/sectors
+Time-based challenges (e.g., startup phases)
+Crisis management scenarios
+
+Enhanced AI feedback
+More specific, actionable feedback
+Step-by-step improvement guides
+Personalized recommendations
+
+Social proof
+"X students completed this scenario"
+
+Time management
+Optional time limits for decisions
+
+Preparation tools
+Pre-simulation briefings
+Concept guides

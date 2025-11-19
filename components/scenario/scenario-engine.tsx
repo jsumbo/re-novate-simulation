@@ -74,13 +74,12 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
 
   const handleStartSession = async () => {
     setIsLoading(true)
-    const result = await startNewSession(user.id)
-
-    if (result.success && result.session) {
-      setSession(result.session)
-      await loadScenario(result.session)
+    try {
+      router.push('/student/simulation')
+    } catch (error) {
+      console.error('Error navigating to simulation:', error)
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   const handleSubmitDecision = async () => {

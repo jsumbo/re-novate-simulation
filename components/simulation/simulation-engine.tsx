@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Clock, Target, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react"
+import { Clock, Target, Lightbulb, TrendingUp, AlertTriangle, Users, Info } from "lucide-react"
 import Link from "next/link"
 import type { DetailedFeedback, SimulationContext, SimulationOption, SimulationResponse, SimulationTask } from "@/lib/simulation/types"
 import { DetailedFeedbackComponent } from "@/components/simulation/detailed-feedback"
@@ -38,6 +38,8 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
   const [aiResults, setAiResults] = useState<FeedbackPayload | null>(null)
   const [usedScenarios, setUsedScenarios] = useState<Array<{ id: string; title: string }>>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [socialProofCount, setSocialProofCount] = useState<number | null>(null)
+  const [hoveredOptionId, setHoveredOptionId] = useState<string | null>(null)
 
   // Find the primary task (either multiple choice with options, or essay/short_answer)
   const primaryTask: SimulationTask | null = useMemo(() => {
@@ -115,6 +117,20 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
     }
   }
 
+  const fetchSocialProof = async (scenarioTitle: string) => {
+    try {
+      const response = await fetch(`/api/simulation/social-proof?title=${encodeURIComponent(scenarioTitle)}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSocialProofCount(data.count)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching social proof:', error)
+    }
+  }
+
   const loadSimulation = async (
     roundToLoad: number,
     historyOverride?: Array<{ id: string; title: string }>,
@@ -180,6 +196,11 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
             },
           ]
         })
+        
+        // Fetch social proof
+        if (data.simulation.scenario.title) {
+          fetchSocialProof(data.simulation.scenario.title)
+        }
       } else {
         setSimulation(null)
       }
@@ -364,8 +385,16 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
         <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">Business Simulation</h1>
-            <p className="text-gray-600">Round {currentRound} of {MAX_ROUNDS}</p>
+            <h1 className="text-2xl font-bold">Simulation</h1>
+            <div className="flex items-center gap-4 mt-1">
+              <p className="text-gray-600 font-medium">Round {currentRound} of {MAX_ROUNDS}</p>
+              {socialProofCount !== null && socialProofCount > 0 && (
+                <div className="flex items-center gap-1 text-sm text-gray-500">
+                  <Users className="h-4 w-4" />
+                  <span>{socialProofCount} {socialProofCount === 1 ? 'student has' : 'students have'} completed this scenario</span>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock className="h-4 w-4" />
@@ -374,7 +403,11 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
         </div>
 
         <div className="mb-6">
-          <Progress value={(currentRound / MAX_ROUNDS) * 100} className="h-2" />
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">Progress</span>
+            <span className="text-sm text-gray-500">{Math.round((currentRound / MAX_ROUNDS) * 100)}%</span>
+          </div>
+          <Progress value={(currentRound / MAX_ROUNDS) * 100} className="h-3" />
         </div>
 
         <Card className="mb-6">
@@ -450,9 +483,40 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
                       <span className="text-sm text-gray-500">{option.resource_impact.time_required}</span>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-black mb-2">
-                        {option.text}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="text-lg font-semibold text-black flex-1">
+                          {option.text}
+                        </h3>
+                        {option.why_this_matters && (
+                          <div className="relative group">
+                            <button
+                              type="button"
+                              className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                              onMouseEnter={() => setHoveredOptionId(option.id)}
+                              onMouseLeave={() => setHoveredOptionId(null)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setHoveredOptionId(hoveredOptionId === option.id ? null : option.id)
+                              }}
+                            >
+                              <Info className="h-4 w-4 text-gray-500" />
+                            </button>
+                            {hoveredOptionId === option.id && (
+                              <div className="absolute right-0 top-8 z-50 w-80 p-3 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                <div className="flex items-start gap-2">
+                                  <Lightbulb className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <h4 className="font-semibold text-sm mb-1">Why This Matters</h4>
+                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                      {option.why_this_matters}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         {option.reasoning}
                       </p>

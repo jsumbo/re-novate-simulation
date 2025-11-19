@@ -793,6 +793,7 @@ function generateOptions(
       id: `option_${index + 1}`,
       text: generateOptionText(type, scenario, context),
       reasoning: generateReasoning(type, context),
+      why_this_matters: generateWhyThisMatters(type, scenario, context),
       immediate_consequences: generateConsequences("immediate", type, context),
       long_term_effects: generateConsequences("long_term", type, context),
       skill_development: generateSkillDevelopment(type, context),
@@ -838,6 +839,20 @@ function generateReasoning(type: string, context: SimulationContext): string {
   };
 
   return reasoning[type as keyof typeof reasoning] || reasoning.conservative;
+}
+
+function generateWhyThisMatters(
+  type: string,
+  scenario: SimulationScenario,
+  context: SimulationContext
+): string {
+  const whyMatters = {
+    aggressive: `This decision demonstrates your ability to take calculated risks and move quickly when opportunities arise. In ${context.industry}, being first to market or making bold moves can create significant competitive advantages, especially when you have limited time (${context.resources.time_constraint}) and need to show results.`,
+    conservative: `A measured approach protects your limited resources (budget: $${context.resources.budget.toLocaleString()}) and maintains team stability during uncertain times. This strategy is crucial when operating in ${context.market_conditions} conditions where preserving capital and relationships can determine long-term survival.`,
+    innovative: `Creative solutions often unlock new revenue streams and differentiate your business in crowded markets. With your ${context.user_background.career_path} expertise, this approach leverages your unique perspective to solve ${scenario.challenge.toLowerCase()} in ways competitors haven't considered.`,
+  };
+
+  return whyMatters[type as keyof typeof whyMatters] || whyMatters.conservative;
 }
 
 function generateConsequences(

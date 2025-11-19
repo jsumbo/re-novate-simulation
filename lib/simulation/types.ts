@@ -32,6 +32,7 @@ export interface SimulationOption {
   id: string
   text: string
   reasoning: string
+  why_this_matters?: string
   immediate_consequences: string[]
   long_term_effects: string[]
   skill_development: Record<string, number>

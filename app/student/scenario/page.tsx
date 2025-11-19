@@ -26,7 +26,7 @@ export default async function ScenarioPage({ searchParams }: ScenarioPageProps) 
     const supabase = await getSupabaseServerClient()
     if (supabase) {
       const { data: session } = await supabase
-        .from("sessions")
+        .from("simulation_sessions")
         .select("*")
         .eq("id", params.session)
         .eq("user_id", user.id)
@@ -39,13 +39,13 @@ export default async function ScenarioPage({ searchParams }: ScenarioPageProps) 
     const supabase = await getSupabaseServerClient()
     if (supabase) {
       const { data: session } = await supabase
-        .from("sessions")
+        .from("simulation_sessions")
         .select("*")
         .eq("user_id", user.id)
-        .eq("status", "in_progress")
+        .eq("status", "ongoing")
         .order("created_at", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       
       existingSession = session
     }
