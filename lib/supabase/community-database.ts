@@ -69,11 +69,16 @@ export async function getCommunityStudents(currentUserId?: string) {
         : 'Getting Started'
       const completedSessions = student.sessions?.filter((s: any) => s.status === 'completed').length || 0
 
+      // Handle schools relation shape (array vs object)
+      const schoolName = Array.isArray(student.schools)
+        ? (student.schools[0]?.name || 'Unknown School')
+        : (student.schools?.name || 'Unknown School')
+
       return {
         id: student.id,
         username: student.username || student.participant_id, // Use actual username or fallback to participant ID
         career_path: student.career_path || 'Exploring',
-        school_name: student.schools?.name || 'Unknown School',
+        school_name: schoolName,
         total_skill_points: skillPoints,
         level: level,
         top_skill: topSkill.replace(/_/g, ' '),
@@ -192,9 +197,9 @@ export async function getCommunityLeaderboard(limit: number = 10) {
         participant_id,
         username,
         career_path,
+        created_at,
         schools!inner(name),
-        progress(skill_level),
-        sessions(status)
+        progress(skill_name, skill_level, total_scenarios_completed, average_score)
       `)
       .eq('role', 'student')
       .not('participant_id', 'is', null) // Only users with participant IDs
@@ -212,36 +217,48 @@ export async function getCommunityLeaderboard(limit: number = 10) {
 
     console.log('Leaderboard raw data:', data?.length, 'students found')
     
-    // Calculate total skill points and sort by performance
+    // Calculate leaderboard metrics from progress table and sort
     const leaderboardData = (data || [])
       .map(student => {
-        const skillPoints = student.progress?.reduce((sum: number, p: any) => sum + p.skill_level, 0) || 0
-        // Count both completed and in_progress sessions as "scenarios attempted"
-        const totalSessions = student.sessions?.length || 0
-        const completedSessions = student.sessions?.filter((s: any) => s.status === 'completed').length || 0
-        
-        console.log(`Student ${student.participant_id}: ${completedSessions} completed, ${totalSessions} total sessions`)
-        
+        const skillPoints = student.progress?.reduce((sum: number, p: any) => sum + (p.skill_level || 0), 0) || 0
+        const simulationsCompleted = student.progress?.reduce((sum: number, p: any) => sum + (p.total_scenarios_completed || 0), 0) || 0
+        const averageScore = (() => {
+          if (!student.progress || student.progress.length === 0) return 0
+          const scores = student.progress.map((p: any) => Number(p.average_score || 0))
+          const total = scores.reduce((s: number, v: number) => s + v, 0)
+          return Math.round(total / scores.length)
+        })()
+
+        console.log(`Student ${student.participant_id}: ${simulationsCompleted} scenarios from progress, avg score ${averageScore}`)
+
+        const topSkill = student.progress?.length > 0
+          ? student.progress.reduce((max: any, p: any) => p.skill_level > max.skill_level ? p : max).skill_name
+          : 'Getting Started'
+
+        // Handle schools relation shape (array vs object)
+        const schoolName = Array.isArray(student.schools)
+          ? (student.schools[0]?.name || 'Unknown School')
+          : (student.schools?.name || 'Unknown School')
+
         return {
           id: student.id,
           username: student.username || student.participant_id,
           career_path: student.career_path || 'Exploring',
-          school_name: student.schools?.name || 'Unknown School',
+          school_name: schoolName,
           total_skill_points: skillPoints,
           level: Math.max(1, Math.floor(skillPoints / 50) + 1),
-          simulations_completed: completedSessions,
-          total_sessions: totalSessions,
-          performance_score: skillPoints + (completedSessions * 10) + (totalSessions * 2) // Combined score
+          top_skill: topSkill.replace(/_/g, ' '),
+          simulations_completed: simulationsCompleted,
+          total_sessions: simulationsCompleted,
+          performance_score: skillPoints + (simulationsCompleted * 10) + Math.round(averageScore / 10),
+          joined_date: student.created_at,
+          last_active: student.created_at
         }
       })
-      // Sort by: 1) completed sessions, 2) total sessions, 3) skill points
+      // Sort by: 1) simulations completed, 2) performance score, 3) skill points
       .sort((a, b) => {
-        if (b.simulations_completed !== a.simulations_completed) {
-          return b.simulations_completed - a.simulations_completed
-        }
-        if (b.total_sessions !== a.total_sessions) {
-          return b.total_sessions - a.total_sessions
-        }
+        if (b.simulations_completed !== a.simulations_completed) return b.simulations_completed - a.simulations_completed
+        if (b.performance_score !== a.performance_score) return b.performance_score - a.performance_score
         return b.total_skill_points - a.total_skill_points
       })
       .slice(0, limit)
