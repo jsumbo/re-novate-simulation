@@ -94,8 +94,16 @@ export async function POST(request: NextRequest) {
       }
 
       // Save task submission to database
+      if (!userId) {
+        return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 401 })
+      }
+      if (!sessionId) {
+        return NextResponse.json({ success: false, error: 'Missing sessionId for decision tracking' }, { status: 400 })
+      }
+
       const { error: decisionError } = await supabase.from('decisions').insert({
         user_id: userId,
+        session_id: sessionId,
         scenario_key: scenario.id,
         selected_option: null,
         task_response: JSON.stringify({
@@ -187,8 +195,16 @@ export async function POST(request: NextRequest) {
     const outcomeScore = calculateOutcomeScore(option, round)
     const skillsGained = option.skill_development || {}
 
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 401 })
+    }
+    if (!sessionId) {
+      return NextResponse.json({ success: false, error: 'Missing sessionId for decision tracking' }, { status: 400 })
+    }
+
     const { error: decisionError } = await supabase.from('decisions').insert({
       user_id: userId,
+      session_id: sessionId,
       scenario_key: scenario.id,
       selected_option: option.id,
       round_number: round,
