@@ -283,7 +283,102 @@ export function AIMentorChat({ user }: AIMentorChatProps) {
                       : 'bg-gray-100 text-black border border-gray-200'
                   }`}
                 >
-                  <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                  {(() => {
+                    const text = message.content || ''
+                    const lines = text.split(/\r?\n/)
+
+                    // Simple formatter: headings, bold, numbered/bulleted lists, paragraphs
+                    const formatInline = (s: string) => {
+                      // Bold **text**
+                      const parts = s.split(/(\*\*[^*]+\*\*)/)
+                      return (
+                        <>
+                          {parts.map((part, i) => {
+                            const m = part.match(/^\*\*([^*]+)\*\*$/)
+                            if (m) return <strong key={i}>{m[1]}</strong>
+                            return <span key={i}>{part}</span>
+                          })}
+                        </>
+                      )
+                    }
+
+                    const items: JSX.Element[] = []
+                    let listBuffer: { ordered: boolean; items: string[] } | null = null
+
+                    const flushList = () => {
+                      if (!listBuffer) return
+                      const { ordered, items: li } = listBuffer
+                      items.push(
+                        ordered ? (
+                          <ol className="list-decimal pl-5 space-y-1 text-xs sm:text-sm" key={`ol-${items.length}`}>
+                            {li.map((x, idx) => (
+                              <li key={idx}>{formatInline(x)}</li>
+                            ))}
+                          </ol>
+                        ) : (
+                          <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm" key={`ul-${items.length}`}>
+                            {li.map((x, idx) => (
+                              <li key={idx}>{formatInline(x)}</li>
+                            ))}
+                          </ul>
+                        )
+                      )
+                      listBuffer = null
+                    }
+
+                    for (const line of lines) {
+                      const trimmed = line.trim()
+                      if (!trimmed) {
+                        flushList()
+                        continue
+                      }
+
+                      // Heading: start with a word + ! or : or markdown #
+                      if (/^#{1,3}\s+/.test(trimmed)) {
+                        flushList()
+                        const h = trimmed.replace(/^#{1,3}\s+/, '')
+                        items.push(
+                          <h3 className="text-sm sm:text-base font-bold mb-1" key={`h-${items.length}`}>
+                            {formatInline(h)}
+                          </h3>
+                        )
+                        continue
+                      }
+
+                      // Ordered list like "1. text"
+                      const olMatch = trimmed.match(/^\d+\.\s+(.*)$/)
+                      if (olMatch) {
+                        if (!listBuffer || !listBuffer.ordered) {
+                          flushList()
+                          listBuffer = { ordered: true, items: [] }
+                        }
+                        listBuffer.items.push(olMatch[1])
+                        continue
+                      }
+
+                      // Unordered list like "- text" or "* text"
+                      const ulMatch = trimmed.match(/^(?:-|\*)\s+(.*)$/)
+                      if (ulMatch) {
+                        if (!listBuffer || listBuffer.ordered) {
+                          flushList()
+                          listBuffer = { ordered: false, items: [] }
+                        }
+                        listBuffer.items.push(ulMatch[1])
+                        continue
+                      }
+
+                      // Regular paragraph
+                      flushList()
+                      items.push(
+                        <p className="text-xs sm:text-sm leading-relaxed break-words mb-1" key={`p-${items.length}`}>
+                          {formatInline(trimmed)}
+                        </p>
+                      )
+                    }
+
+                    flushList()
+                    return <div>{items}</div>
+                  })()}
                   
                   {/* File attachment display */}
                   {message.file_url && (
