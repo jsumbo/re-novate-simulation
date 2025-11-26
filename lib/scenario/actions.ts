@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 
@@ -448,7 +449,7 @@ export async function submitDecision(
   }
 
   const option = scenario.options.find((opt: any) => opt.id === selectedOptionId);
-  const aiFeedback = await generateAIFeedback(scenario, option);
+  const aiFeedback = await generateAIFeedback(scenario, option, { career_path: (scenario?.career_path || undefined), location: "Liberia" });
 
   const outcomeScore = calculateOutcomeScore(
     scenario.difficulty_level,
@@ -475,28 +476,56 @@ export async function submitDecision(
   // Update progress
   await updateProgress(userId, skillsGained, outcomeScore);
 
-  // Update session
-  const { data: currentSession } = await supabase
-    .from("sessions")
-    .select("*")
+  // Update session progress/status in simulation_sessions (fallback to sessions)
+  const service = await getSupabaseServiceRoleClient();
+  let updated = false;
+  const { data: simSession, error: simFetchError } = await supabase
+    .from("simulation_sessions")
+    .select("id, current_round, total_rounds")
     .eq("id", sessionId)
     .single();
 
-  if (
-    currentSession &&
-    currentSession.current_round >= currentSession.total_rounds
-  ) {
-    // Mark session as completed
-    await supabase
+  if (!simFetchError && simSession) {
+    const isComplete = simSession.current_round >= simSession.total_rounds;
+    if (isComplete) {
+      await (service || supabase)
+        .from("simulation_sessions")
+        .update({ status: "completed", progress: 100 })
+        .eq("id", sessionId);
+    } else {
+      const nextRound = (simSession.current_round || 1) + 1;
+      const newProgress = Math.min(100, Math.round((nextRound / (simSession.total_rounds || 5)) * 100));
+      await (service || supabase)
+        .from("simulation_sessions")
+        .update({ current_round: nextRound, progress: newProgress, status: "ongoing" })
+        .eq("id", sessionId);
+    }
+    updated = true;
+  }
+
+  if (!updated) {
+    const { data: currentSession } = await supabase
       .from("sessions")
-      .update({ status: "completed", completed_at: new Date().toISOString() })
-      .eq("id", sessionId);
-  } else {
-    // Move to next round
-    await supabase
-      .from("sessions")
-      .update({ current_round: currentSession.current_round + 1 })
-      .eq("id", sessionId);
+      .select("*")
+      .eq("id", sessionId)
+      .single();
+
+    if (
+      currentSession &&
+      currentSession.current_round >= currentSession.total_rounds
+    ) {
+      // Mark legacy session as completed
+      await supabase
+        .from("sessions")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", sessionId);
+    } else if (currentSession) {
+      // Move to next round in legacy sessions
+      await supabase
+        .from("sessions")
+        .update({ current_round: (currentSession.current_round || 1) + 1 })
+        .eq("id", sessionId);
+    }
   }
 
   revalidatePath("/student/dashboard");
@@ -511,31 +540,33 @@ export async function submitDecision(
   };
 }
 
-async function generateAIFeedback(scenario: any, option: any): Promise<string> {
+async function generateAIFeedback(scenario: any, option: any, userContext?: { career_path?: string; location?: string }): Promise<string> {
+  // Personalized deterministic feedback when AI service is unavailable
   if (!option || !option.text) {
-    return "Thank you for your decision. Consider the various factors that influence business outcomes in your local context.";
+    const role = userContext?.career_path ? userContext.career_path.toUpperCase() : "LEADERSHIP";
+    return `Thoughtful move. As a ${role}, consider stakeholders, execution risks, and local market dynamics to strengthen your next decision.`;
   }
 
-  // Extract the primary skill (the one with highest impact)
-  let primarySkill = "business";
-  if (option.skills_impact) {
-    const skills = Object.entries(option.skills_impact) as [string, number][];
-    if (skills.length > 0) {
-      skills.sort((a, b) => b[1] - a[1]);
-      primarySkill = skills[0][0].replace(/_/g, " ");
-    }
-  }
+  // Extract signals for personalization
+  const role = userContext?.career_path || "entrepreneur";
+  const location = userContext?.location || (scenario?.context?.includes("Liberia") ? "Liberia" : "your market");
+  const difficulty = scenario?.difficulty_level ? `level ${scenario.difficulty_level}` : "current";
+  const impacts = option?.skills_impact || option?.skill_development || {};
+  const impactedSkills = Object.keys(impacts);
+  const primarySkill = impactedSkills.length > 0 ? impactedSkills[0].replace(/_/g, " ") : "strategic thinking";
+  const risk = option?.risk_level || "medium";
+  const budget = option?.resource_impact?.budget_change;
+  const budgetText = typeof budget === "number" ? (budget > 0 ? `budget increase of +${budget}` : budget < 0 ? `budget relief of ${budget}` : "neutral budget impact") : "budget impact not specified";
 
-  const feedbackTemplates = [
-    `Good choice! By choosing to ${option.text.toLowerCase()}, you demonstrated strong ${primarySkill} skills. In the Liberian business context, this approach shows understanding of local market dynamics.`,
-    `Interesting decision. ${option.text} reflects a ${primarySkill} approach. Consider how this might affect your stakeholders in the long term, especially in Liberia's evolving economy.`,
-    `This is a practical solution. ${option.text} shows you're thinking about ${primarySkill}. Remember that in Liberia's business environment, relationships and trust are crucial for success.`,
-    `Bold move! ${option.text} demonstrates ${primarySkill} thinking. This could lead to innovation, but also consider the risks in a market with limited resources.`,
-  ];
-
-  return feedbackTemplates[
-    Math.floor(Math.random() * feedbackTemplates.length)
-  ];
+  // Compose tailored feedback
+  return [
+    `Good judgment for a ${role} navigating ${location}.`,
+    `Your choice at ${difficulty} difficulty emphasizes ${primarySkill} with ${risk} risk and ${budgetText}.`,
+    impactedSkills.length > 1
+      ? `You also touch on ${impactedSkills.slice(1).map(s => s.replace(/_/g, " ")).join(", ")}, which can compound outcomes if supported by clear execution.`
+      : `Focus on deepening ${primarySkill} through measurable milestones to amplify results.`,
+    `Next step: outline a 2–3 item action plan (owners, timeline) to validate this decision in the ${location} context.`
+  ].join(" ");
 }
 
 function calculateOutcomeScore(

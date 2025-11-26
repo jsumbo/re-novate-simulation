@@ -606,19 +606,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
           </Card>
         )}
 
-        <Card className="mb-6 bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0">
-                <Lightbulb className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-blue-900 mb-1">AI Mentor Guidance</h3>
-                <p className="text-blue-800 text-sm leading-relaxed">{simulation.ai_context}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Removed AI Mentor Guidance card to reduce redundancy */}
 
         {showResults && (
           <Card className="mb-6 bg-green-50 border-green-200">
@@ -641,16 +629,7 @@ export function EnhancedSimulationEngine({ user }: EnhancedSimulationEngineProps
                     skillsGained={aiResults.skills_gained || {}}
                     onContinue={handleNextRound}
                   />
-                  {/* Additional Next Round button for visibility */}
-                  <div className="flex justify-center pt-4 border-t border-green-200 mt-6">
-                    <Button
-                      onClick={handleNextRound}
-                      className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
-                      disabled={currentRound >= MAX_ROUNDS}
-                    >
-                      {currentRound >= MAX_ROUNDS ? 'Simulation Complete' : 'Next Round'}
-                    </Button>
-                  </div>
+                  {/* Next Round handled by parent button; remove duplicate */}
                 </>
               ) : aiResults ? (
                 <section className="space-y-4">

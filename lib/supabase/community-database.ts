@@ -20,6 +20,47 @@ export interface CommunityStats {
   most_popular_career_path: string
 }
 
+// Helper: compute leaderboard entries from Supabase users + progress payload
+export function computeLeaderboardFromProgress(rawUsers: any[]) {
+  return (rawUsers || []).map((student: any) => {
+    const skillPoints = student.progress?.reduce((sum: number, p: any) => sum + (p.skill_level || 0), 0) || 0
+    const simulationsCompleted = student.progress?.reduce((sum: number, p: any) => sum + (p.total_scenarios_completed || 0), 0) || 0
+    const averageScore = (() => {
+      if (!student.progress || student.progress.length === 0) return 0
+      const scores = student.progress.map((p: any) => Number(p.average_score || 0))
+      const total = scores.reduce((s: number, v: number) => s + v, 0)
+      return Math.round(total / scores.length)
+    })()
+
+    const topSkill = student.progress?.length > 0
+      ? student.progress.reduce((max: any, p: any) => (p.skill_level || 0) > (max.skill_level || 0) ? p : max).skill_name
+      : 'Getting Started'
+
+    const schoolName = Array.isArray(student.schools)
+      ? (student.schools[0]?.name || 'Unknown School')
+      : (student.schools?.name || 'Unknown School')
+
+    return {
+      id: student.id,
+      username: student.username || student.participant_id,
+      career_path: student.career_path || 'Exploring',
+      school_name: schoolName,
+      total_skill_points: skillPoints,
+      level: Math.max(1, Math.floor(skillPoints / 50) + 1),
+      top_skill: (topSkill || 'Getting Started').replace(/_/g, ' '),
+      simulations_completed: simulationsCompleted,
+      total_sessions: simulationsCompleted,
+      performance_score: skillPoints + (simulationsCompleted * 10) + Math.round(averageScore / 10),
+      joined_date: student.created_at,
+      last_active: student.created_at
+    }
+  }).sort((a, b) => {
+    if (b.simulations_completed !== a.simulations_completed) return b.simulations_completed - a.simulations_completed
+    if (b.performance_score !== a.performance_score) return b.performance_score - a.performance_score
+    return b.total_skill_points - a.total_skill_points
+  })
+}
+
 // Get all students for community page (privacy-safe data only)
 export async function getCommunityStudents(currentUserId?: string) {
   const supabase = await getSupabaseServerClient()
@@ -217,51 +258,7 @@ export async function getCommunityLeaderboard(limit: number = 10) {
 
     console.log('Leaderboard raw data:', data?.length, 'students found')
     
-    // Calculate leaderboard metrics from progress table and sort
-    const leaderboardData = (data || [])
-      .map(student => {
-        const skillPoints = student.progress?.reduce((sum: number, p: any) => sum + (p.skill_level || 0), 0) || 0
-        const simulationsCompleted = student.progress?.reduce((sum: number, p: any) => sum + (p.total_scenarios_completed || 0), 0) || 0
-        const averageScore = (() => {
-          if (!student.progress || student.progress.length === 0) return 0
-          const scores = student.progress.map((p: any) => Number(p.average_score || 0))
-          const total = scores.reduce((s: number, v: number) => s + v, 0)
-          return Math.round(total / scores.length)
-        })()
-
-        console.log(`Student ${student.participant_id}: ${simulationsCompleted} scenarios from progress, avg score ${averageScore}`)
-
-        const topSkill = student.progress?.length > 0
-          ? student.progress.reduce((max: any, p: any) => p.skill_level > max.skill_level ? p : max).skill_name
-          : 'Getting Started'
-
-        // Handle schools relation shape (array vs object)
-        const schoolName = Array.isArray(student.schools)
-          ? (student.schools[0]?.name || 'Unknown School')
-          : (student.schools?.name || 'Unknown School')
-
-        return {
-          id: student.id,
-          username: student.username || student.participant_id,
-          career_path: student.career_path || 'Exploring',
-          school_name: schoolName,
-          total_skill_points: skillPoints,
-          level: Math.max(1, Math.floor(skillPoints / 50) + 1),
-          top_skill: topSkill.replace(/_/g, ' '),
-          simulations_completed: simulationsCompleted,
-          total_sessions: simulationsCompleted,
-          performance_score: skillPoints + (simulationsCompleted * 10) + Math.round(averageScore / 10),
-          joined_date: student.created_at,
-          last_active: student.created_at
-        }
-      })
-      // Sort by: 1) simulations completed, 2) performance score, 3) skill points
-      .sort((a, b) => {
-        if (b.simulations_completed !== a.simulations_completed) return b.simulations_completed - a.simulations_completed
-        if (b.performance_score !== a.performance_score) return b.performance_score - a.performance_score
-        return b.total_skill_points - a.total_skill_points
-      })
-      .slice(0, limit)
+    const leaderboardData = computeLeaderboardFromProgress(data || []).slice(0, limit)
 
     return {
       success: true,

@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       // Save task submission to database
       const { error: decisionError } = await supabase.from('decisions').insert({
         user_id: userId,
-        scenario_id: scenario.id,
+        scenario_key: scenario.id,
         selected_option: null,
         task_response: JSON.stringify({
           task_id: task.id,
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
 
     const { error: decisionError } = await supabase.from('decisions').insert({
       user_id: userId,
-      scenario_id: scenario.id,
+      scenario_key: scenario.id,
       selected_option: option.id,
       round_number: round,
       ai_feedback: JSON.stringify(aiFeedback),

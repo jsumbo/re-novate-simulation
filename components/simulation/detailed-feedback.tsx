@@ -375,12 +375,7 @@ export function DetailedFeedbackComponent({
         </TabsContent>
       </Tabs>
 
-      {/* Continue Button */}
-      <div className="flex justify-center pt-6">
-        <Button onClick={onContinue} size="lg" className="px-8 w-full sm:w-auto">
-          Continue to Next Round
-        </Button>
-      </div>
+      {/* Continue Button removed to avoid duplicate actions; parent controls navigation */}
     </div>
   )
 }

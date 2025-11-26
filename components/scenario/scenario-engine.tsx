@@ -29,6 +29,7 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [feedback, setFeedback] = useState<any>(null)
   const [showFeedback, setShowFeedback] = useState(false)
+  const [showCompletion, setShowCompletion] = useState(false)
 
   useEffect(() => {
     if (existingSession) {
@@ -153,7 +154,7 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
       // Session complete - update status in database
       const { updateSessionProgress } = await import("@/lib/scenario/actions")
       await updateSessionProgress(session.id, session.current_round, 'completed')
-      router.push("/student/dashboard")
+      setShowCompletion(true)
       return
     }
 
@@ -233,10 +234,68 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
     )
   }
 
+  // Show completion modal regardless of feedback visibility
+  if (showCompletion) {
+    return (
+      <StudentLayout user={user}>
+        <div className="container mx-auto px-4 py-8">
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-md text-center">
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(40)].map((_, i) => (
+                  <span
+                    key={i}
+                    className="absolute text-2xl"
+                    style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, transform: `rotate(${Math.random() * 360}deg)` }}
+                  >
+                    🎉
+                  </span>
+                ))}
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
+              <p className="text-gray-600 mb-4">You completed all 5 scenarios.</p>
+              <div className="flex gap-3 justify-center">
+                <Button variant="outline" onClick={() => router.push('/student/simulations')}>Back</Button>
+                <Button onClick={() => router.push('/student/scenario')}>Begin Another Round</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </StudentLayout>
+    )
+  }
+
   if (showFeedback && feedback) {
     return (
       <StudentLayout user={user}>
         <div className="container mx-auto px-4 py-8">
+          {showCompletion && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+              <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-md text-center">
+                <div className="absolute inset-0 pointer-events-none">
+                  {[...Array(40)].map((_, i) => (
+                    <span
+                      key={i}
+                      className="absolute text-2xl"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        transform: `rotate(${Math.random() * 360}deg)`
+                      }}
+                    >
+                      🎉
+                    </span>
+                  ))}
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
+                <p className="text-gray-600 mb-4">You completed all 5 scenarios.</p>
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={() => router.push('/student/simulations')}>Back</Button>
+                  <Button onClick={() => router.push('/student/scenario')}>Begin Another Round</Button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="mb-6 max-w-4xl mx-auto">
           <Progress value={(session.current_round / session.total_rounds) * 100} className="h-2" />
           <p className="text-sm text-gray-600 mt-2 text-center">
@@ -397,7 +456,7 @@ export function ScenarioEngine({ user, existingSession }: ScenarioEngineProps) {
             
             <Button onClick={handleSubmitDecision} disabled={!selectedOption || isLoading} className="w-full" size="lg">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit Decision
+              Submit
             </Button>
           </div>
         )}

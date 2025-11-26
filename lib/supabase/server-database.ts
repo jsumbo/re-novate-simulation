@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "./server"
+import { getSupabaseServerClient, getSupabaseServiceRoleClient } from "./server"
 import { SimulationSession, SimulationSummary, SimulationStatus } from "../types"
 
 export interface Progress {
@@ -395,7 +395,8 @@ export async function getUserSimulationSummary(userId: string) {
 }
 
 export async function createSimulationSession(sessionData: Omit<SimulationSession, 'id' | 'created_at' | 'updated_at'>) {
-  const supabase = await getSupabaseServerClient()
+  // Prefer service role client for writes to bypass RLS safely on server
+  const supabase = getSupabaseServiceRoleClient() || (await getSupabaseServerClient())
   
   if (!supabase) {
     return {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@/lib/supabase/server'
 import { createSimulationSession } from '@/lib/supabase/server-database'
 
 export async function POST(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await getSupabaseServerClient()
+    const supabase = getSupabaseServiceRoleClient() || (await getSupabaseServerClient())
     if (!supabase) {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -110,7 +110,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const supabase = await getSupabaseServerClient()
+    const supabase = getSupabaseServiceRoleClient() || (await getSupabaseServerClient())
     if (!supabase) {
       return NextResponse.json(
         { success: false, error: 'Database not available' },
